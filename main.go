@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bufio"
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -41,17 +43,45 @@ func crawl(url string, ch chan URLShit, chFinished chan struct{}, wg *sync.WaitG
 	}
 }
 
+// readLines reads a whole file into memory
+// and returns a slice of its lines.
+func readLines(path string) ([]string, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	var lines []string
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		lines = append(lines, scanner.Text())
+	}
+	return lines, scanner.Err()
+}
+
 func main() {
 	foundUrls := make(map[string]URLShit)
-	seedUrls := os.Args[1:]
 
+	argUrls := flag.String("urls", "", "Provide space separated list of urls to grab eh")
+	argUrlFile := flag.String("url_file", "	", "Provide space separated list of urls to grab eh")
+	var urls []string
+	flag.Parse()
+	if *argUrlFile != "" {
+		argFileUrls, err := readLines(*argUrlFile)
+		if err != nil {
+			fmt.Print("File: %s does not exist, or you do not have permz (%s)", *argUrlFile, err)
+		}
+		urls = append(urls, argFileUrls...)
+	}
+	urls = append(urls, strings.Split(*argUrls, " ")...)
 	// Channels
 	chUrls := make(chan URLShit)
 	chFinished := make(chan struct{})
 
 	wg := sync.WaitGroup{}
 	// Kick off the crawl process (concurrently)
-	for _, url := range seedUrls {
+	for _, url := range urls {
 		wg.Add(1)
 		go crawl(url, chUrls, chFinished, &wg)
 	}
