@@ -15,5 +15,6 @@ A horizontal and vertical web content enumerator by swarley7 (@swarley777)
 - Screenshot discovered content! (can be tuned to prevent excessive output)
 
 #TODO
-[] write gograbber
-[] make it not shit
+
+- [ ] write gograbber
+- [ ] make it not shit
