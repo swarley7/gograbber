@@ -6,8 +6,6 @@ import (
 	"os"
 )
 
-// Contains State that are read in from the command
-// line when the program is invoked.
 type State struct {
 	Client         *http.Client
 	Cookies        string
@@ -17,7 +15,9 @@ type State struct {
 	IncludeLength  bool
 	Mode           string
 	NoStatus       bool
+	Debug          bool
 	Password       string
+	Ports          IntSet
 	Printer        PrintResultFunc
 	Processor      ProcessorFunc
 	ProxyUrl       *url.URL
@@ -26,6 +26,8 @@ type State struct {
 	ShowIPs        bool
 	ShowCNAME      bool
 	StatusCodes    IntSet
+	StatusCodesIgn IntSet
+	Screenshot     bool
 	Threads        int
 	Url            string
 	UseSlash       bool

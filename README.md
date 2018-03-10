@@ -18,3 +18,14 @@ A horizontal and vertical web content enumerator by swarley7 (@swarley777)
 
 - [ ] write gograbber
 - [ ] make it not shit
+
+# Acks
+
+- OJ Reeves: this project borrows heavily from `github.com/OJ/gobuster` (which is awesome, btw.) so thanks!
+- C_Sto: thx for forcing me to learn Golang
+
+# Donate?
+
+If you like this *thing* and want to shout a beer maybe do that?
+- ETH: ``
+- BTC: ``
