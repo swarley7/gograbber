@@ -7,7 +7,7 @@ import (
 	"github.com/fatih/color"
 )
 
-// PrintBanner prints the banner
+// PrintBanner prints the banner... HOW GOOD IS THE BANNER?
 func PrintBanner(s *State) {
 	var banner string
 	banner = `                                                 $$\       $$\                           

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"strconv"
 	"strings"
 
 	multierror "github.com/hashicorp/go-multierror"
@@ -83,7 +84,9 @@ func Start(s State) {
 
 func Initialise(
 	s *State, ports string) (errors *multierror.Error) {
-
+	if ports != "" {
+		s.Ports.Set = strArrToInt(strings.Split(ports, ","))
+	}
 	return
 }
 
@@ -120,7 +123,6 @@ func readLines(path string) ([]string, error) {
 	return lines, scanner.Err()
 }
 
-// GetDataFromFile reads line separated data into a string array
 func GetDataFromFile(fileName string) (data []string, err error) {
 	if fileName != "" {
 		data, err := readLines(fileName)
@@ -131,4 +133,15 @@ func GetDataFromFile(fileName string) (data []string, err error) {
 		return data, err
 	}
 	return
+}
+
+func strArrToInt(t []string) (t2 []int) {
+	for _, i := range t {
+		j, err := strconv.Atoi(i)
+		if err != nil {
+			panic(err)
+		}
+		t2 = append(t2, j)
+	}
+	return t2
 }

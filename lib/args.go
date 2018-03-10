@@ -13,8 +13,8 @@ type State struct {
 	Extensions     []string
 	FollowRedirect bool
 	IncludeLength  bool
-	Mode           string
 	NoStatus       bool
+	Hosts          []string
 	Debug          bool
 	Password       string
 	Ports          IntSet
@@ -25,7 +25,6 @@ type State struct {
 	Setup          SetupFunc
 	ShowIPs        bool
 	Protocol       string
-	ShowCNAME      bool
 	StatusCodes    IntSet
 	StatusCodesIgn IntSet
 	Screenshot     bool
