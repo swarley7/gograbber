@@ -3,15 +3,12 @@ package main
 import (
 	"flag"
 	"fmt"
-	"gograbber/libgograbber"
+
+	"github.com/swarley7/gograbber/lib"
 )
 
-func parseCMDLine() *libgograbber.State {
-	var extensions string
-	var codes string
-	var proxy string
-
-	s := libgograbber.InitState()
+func parseCMDLine() *lib.State {
+	s := lib.State{}
 
 	// Set up the variables we're interested in parsing.
 	flag.IntVar(&s.Threads, "t", 10, "Number of concurrent threads")
@@ -41,13 +38,13 @@ func parseCMDLine() *libgograbber.State {
 
 	flag.Parse()
 
-	libgograbber.PrintBanner(&s)
+	lib.PrintBanner(&s)
 
-	if err := libgograbber.ValidateState(&s, extensions, codes, proxy); err.ErrorOrNil() != nil {
+	if err := lib.ValidateState(&s); err.ErrorOrNil() != nil {
 		fmt.Printf("%s\n", err.Error())
 		return nil
 	} else {
-		libgograbber.Ruler(&s)
+		// libgograbber.Ruler(&s)
 		return &s
 	}
 }
@@ -55,6 +52,6 @@ func parseCMDLine() *libgograbber.State {
 func main() {
 	state := parseCMDLine()
 	if state != nil {
-		libgograbber.Start(state)
+		lib.Start(*state)
 	}
 }

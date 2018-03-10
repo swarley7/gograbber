@@ -1,4 +1,4 @@
-package libgograbber
+package lib
 
 import (
 	"net/http"
@@ -31,6 +31,7 @@ type State struct {
 	Threads        int
 	Url            string
 	UseSlash       bool
+	Scan           bool
 	UserAgent      string
 	Username       string
 	Verbose        bool

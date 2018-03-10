@@ -1,4 +1,4 @@
-package libgograbber
+package lib
 
 import "fmt"
 

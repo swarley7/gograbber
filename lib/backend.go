@@ -1,7 +1,10 @@
-package libgograbber
+package lib
 
 import (
+	"fmt"
 	"net"
+
+	multierror "github.com/hashicorp/go-multierror"
 )
 
 // A single result which comes from an individual web
@@ -27,7 +30,7 @@ type StringSet struct {
 	Set map[string]bool
 }
 
-func Hosts(cidr string) ([]net.IP, error) {
+func Hosts(cidr string) ([]string, error) {
 	ip, ipnet, err := net.ParseCIDR(cidr)
 	if err != nil {
 		return nil, err
@@ -35,7 +38,7 @@ func Hosts(cidr string) ([]net.IP, error) {
 
 	var ips []string
 	for ip := ip.Mask(ipnet.Mask); ipnet.Contains(ip); inc(ip) {
-		ips = append(ips, ip)
+		ips = append(ips, ip.String())
 	}
 	return ips, nil
 }
@@ -51,7 +54,7 @@ func inc(ip net.IP) {
 }
 
 // ExpandHosts takes a string array of IP addresses/CIDR masks and converts into a string array of pure IP addresses
-func ExpandHosts(hosts []string) (allHosts []net.IP) {
+func ExpandHosts(hosts []string) (allHosts []string) {
 	for _, host := range hosts {
 		ips, err := Hosts(host)
 		if err != nil { // Not a CIDR... Might be a straight IP
@@ -59,13 +62,24 @@ func ExpandHosts(hosts []string) (allHosts []net.IP) {
 			if ip == nil {
 				continue
 			}
-			allHosts = append(allHosts, ip)
+			allHosts = append(allHosts, ip.String())
 		}
 		allHosts = append(allHosts, ips...)
 	}
 	return allHosts
 }
 
-func Start(s *State) {
+func Start(s State) {
+	if s.Scan {
+		openPorts := ScanHosts(&s)
+		for socketPair := range openPorts.Set {
+			fmt.Printf("Host:Port %s is open", socketPair)
+		}
+	}
+}
 
+func Initialise(
+	s *State) (errors *multierror.Error) {
+
+	return
 }
