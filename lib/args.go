@@ -20,16 +20,17 @@ type State struct {
 	Ports          IntSet
 	Printer        PrintResultFunc
 	Processor      ProcessorFunc
-	ProxyUrl       *url.URL
+	ProxyURL       *url.URL
 	Quiet          bool
 	Setup          SetupFunc
 	ShowIPs        bool
+	Protocol       string
 	ShowCNAME      bool
 	StatusCodes    IntSet
 	StatusCodesIgn IntSet
 	Screenshot     bool
 	Threads        int
-	Url            string
+	URL            string
 	UseSlash       bool
 	Scan           bool
 	UserAgent      string
