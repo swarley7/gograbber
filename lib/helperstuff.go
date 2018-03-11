@@ -7,8 +7,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-
-	multierror "github.com/hashicorp/go-multierror"
 )
 
 // A single result which comes from an individual web
@@ -58,36 +56,20 @@ func inc(ip net.IP) {
 }
 
 // ExpandHosts takes a string array of IP addresses/CIDR masks and converts into a string array of pure IP addresses
-func ExpandHosts(hosts []string) (allHosts []string) {
-	for _, host := range hosts {
-		ips, err := Hosts(host)
-		if err != nil { // Not a CIDR... Might be a straight IP
-			ip := net.ParseIP(host)
+func ExpandHosts(targets []string, ch chan StringSet) {
+	allHosts := StringSet{Set: map[string]bool{}} // Initialise the hosts list... nfi why this is a thing?
+	for _, target := range targets {
+		ips, err := Hosts(target)
+		if err != nil { // Not a CIDR... Might be a straight IP or url
+			ip := net.ParseIP(target)
 			if ip == nil {
 				continue
 			}
-			allHosts = append(allHosts, ip.String())
+			allHosts.Add(ip.String())
 		}
-		allHosts = append(allHosts, ips...)
+		allHosts.AddRange(ips)
 	}
-	return allHosts
-}
-
-func Start(s State) {
-	if s.Scan {
-		openPorts := ScanHosts(&s)
-		for socketPair := range openPorts.Set {
-			fmt.Printf("Host:Port %s is open", socketPair)
-		}
-	}
-}
-
-func Initialise(
-	s *State, ports string) (errors *multierror.Error) {
-	if ports != "" {
-		s.Ports.Set = strArrToInt(strings.Split(ports, ","))
-	}
-	return
+	ch <- allHosts
 }
 
 // LeftPad2Len https://github.com/DaddyOh/golang-samples/blob/master/pad.go
@@ -127,7 +109,7 @@ func GetDataFromFile(fileName string) (data []string, err error) {
 	if fileName != "" {
 		data, err := readLines(fileName)
 		if err != nil {
-			fmt.Printf("File: %v does not exist, or you do not have permz (%v)", fileName, err)
+			fmt.Printf("File: %v does not exist, or you do not have permz (%v)\n", fileName, err)
 			return nil, err
 		}
 		return data, err
@@ -135,7 +117,9 @@ func GetDataFromFile(fileName string) (data []string, err error) {
 	return
 }
 
-func strArrToInt(t []string) (t2 []int) {
+// Taken from gobuster - THANKS! /**/
+// StrArrToInt takes an array of strings and *hopefully* returns an array of ints?
+func StrArrToInt(t []string) (t2 []int) {
 	for _, i := range t {
 		j, err := strconv.Atoi(i)
 		if err != nil {
@@ -145,3 +129,66 @@ func strArrToInt(t []string) (t2 []int) {
 	}
 	return t2
 }
+
+// Add an element to a set
+func (set *StringSet) Add(s string) bool {
+	_, found := set.Set[s]
+	set.Set[s] = true
+	return !found
+}
+
+// Add a list of elements to a set
+func (set *StringSet) AddRange(ss []string) {
+	for _, s := range ss {
+		set.Set[s] = true
+	}
+}
+
+// Test if an element is in a set
+func (set *StringSet) Contains(s string) bool {
+	_, found := set.Set[s]
+	return found
+}
+
+// Check if any of the elements exist
+func (set *StringSet) ContainsAny(ss []string) bool {
+	for _, s := range ss {
+		if set.Set[s] {
+			return true
+		}
+	}
+	return false
+}
+
+// Stringify the set
+func (set *StringSet) Stringify() string {
+	values := []string{}
+	for s, _ := range set.Set {
+		values = append(values, s)
+	}
+	return strings.Join(values, ",")
+}
+
+// Add an element to a set
+func (set *IntSet) Add(i int) bool {
+	_, found := set.Set[i]
+	set.Set[i] = true
+	return !found
+}
+
+// Test if an element is in a set
+func (set *IntSet) Contains(i int) bool {
+	_, found := set.Set[i]
+	return found
+}
+
+// Stringify the set
+func (set *IntSet) Stringify() string {
+	values := []string{}
+	for s, _ := range set.Set {
+		values = append(values, strconv.Itoa(s))
+	}
+	return strings.Join(values, ",")
+}
+
+/**/

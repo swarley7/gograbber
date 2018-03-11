@@ -15,6 +15,7 @@ type State struct {
 	IncludeLength  bool
 	NoStatus       bool
 	Hosts          []string
+	InputFile      string
 	Debug          bool
 	Password       string
 	Ports          IntSet
