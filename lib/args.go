@@ -1,29 +1,25 @@
 package lib
 
 import (
-	"net/http"
 	"net/url"
 	"os"
 )
 
 type State struct {
-	Client         *http.Client
 	Cookies        string
 	Expanded       bool
 	Extensions     []string
 	FollowRedirect bool
 	IncludeLength  bool
 	NoStatus       bool
-	Hosts          []string
+	Hosts          StringSet
 	InputFile      string
 	Debug          bool
+	ExcludeList    []string
 	Password       string
 	Ports          IntSet
-	Printer        PrintResultFunc
-	Processor      ProcessorFunc
 	ProxyURL       *url.URL
 	Quiet          bool
-	Setup          SetupFunc
 	ShowIPs        bool
 	Protocol       string
 	StatusCodes    IntSet
@@ -31,16 +27,15 @@ type State struct {
 	Screenshot     bool
 	Threads        int
 	URL            string
+	URLComponents  []Host
+	Paths          StringSet
 	UseSlash       bool
 	Scan           bool
 	UserAgent      string
 	Username       string
 	Verbose        bool
 	Wordlist       string
-	OutputFileName string
-	OutputFile     *os.File
+	OutputFile     string
 	SignalChan     chan os.Signal
 	Terminate      bool
-	StdIn          bool
-	InsecureSSL    bool
 }

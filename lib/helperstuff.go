@@ -2,25 +2,15 @@ package lib
 
 import (
 	"bufio"
+	"crypto/tls"
 	"fmt"
 	"net"
+	"net/http"
 	"os"
 	"strconv"
 	"strings"
+	"time"
 )
-
-// A single result which comes from an individual web
-// request.
-type Result struct {
-	Entity string
-	Status int
-	Extra  string
-	Size   *int64
-}
-
-type PrintResultFunc func(s *State, r *Result)
-type ProcessorFunc func(s *State, entity string, resultChan chan<- Result)
-type SetupFunc func(s *State) bool
 
 // Shim type for "set" containing ints
 type IntSet struct {
@@ -30,6 +20,32 @@ type IntSet struct {
 // Shim type for "set" containing strings
 type StringSet struct {
 	Set map[string]bool
+}
+
+type Host struct {
+	Paths    StringSet
+	HostAddr string
+	Port     int
+	Protocol string
+}
+
+var tx = &http.Transport{
+	DialContext: (&net.Dialer{
+		//transports don't have default timeouts because having sensible defaults would be too good
+		Timeout: 5 * time.Second,
+	}).DialContext,
+	TLSHandshakeTimeout:   10 * time.Second,
+	MaxIdleConns:          100, //This could potentially be dropped to 1, we aren't going to hit the same server more than once ever
+	IdleConnTimeout:       5 * time.Second,
+	ExpectContinueTimeout: 1 * time.Second,
+	DisableKeepAlives:     true,
+	DisableCompression:    true,
+	TLSClientConfig:       &tls.Config{InsecureSkipVerify: true},
+}
+
+var cl = http.Client{
+	Transport: tx,
+	Timeout:   time.Second * 5, //eyy no reasonable timeout on clients too!
 }
 
 func Hosts(cidr string) ([]string, error) {
@@ -192,3 +208,30 @@ func (set *IntSet) Stringify() string {
 }
 
 /**/
+func ChunkString(s string, chunkSize int) []string {
+	var chunks []string
+	runes := []rune(s)
+
+	if len(runes) == 0 {
+		return []string{s}
+	}
+
+	for i := 0; i < len(runes); i += chunkSize {
+		nn := i + chunkSize
+		if nn > len(runes) {
+			nn = len(runes)
+		}
+		chunks = append(chunks, string(runes[i:nn]))
+	}
+	return chunks
+}
+
+func GenerateURLs(targetList StringSet, Protocol string, Ports IntSet, Paths StringSet, ch chan []Host) {
+	var HostStructs []Host
+	for target, _ := range targetList.Set {
+		for port, _ := range Ports.Set {
+			HostStructs = append(HostStructs, Host{Port: port, Protocol: Protocol, HostAddr: target, Paths: Paths})
+		}
+	}
+	ch <- HostStructs
+}

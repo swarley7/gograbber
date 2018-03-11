@@ -2,6 +2,7 @@ package lib
 
 import (
 	"fmt"
+	"reflect"
 	"strings"
 
 	"github.com/fatih/color"
@@ -40,8 +41,14 @@ func LineSep() string {
 
 func PrintOpts(s *State) {
 	fmt.Printf(LineSep())
-	fmt.Printf("%v\n", RightPad2Len(fmt.Sprintf("Input filename: %v", s.InputFile), " ", 89))
-	fmt.Printf("%v\n", RightPad2Len(fmt.Sprintf("Debug: %v", s.Debug), " ", 89))
-	fmt.Printf(LineSep())
+	keys := reflect.ValueOf(s).Elem()
+	typeOfT := keys.Type()
+	if s.Debug {
+		for i := 0; i < keys.NumField(); i++ {
+			f := keys.Field(i)
+			fmt.Printf("%s: = %v\n", typeOfT.Field(i).Name, f.Interface())
+		}
+		fmt.Printf(LineSep())
+	}
 
 }
