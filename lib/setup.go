@@ -4,25 +4,28 @@ import (
 	"fmt"
 	"math"
 	"strings"
-	"sync"
-	"time"
 
 	multierror "github.com/hashicorp/go-multierror"
 )
 
-func Initialise(s *State, ports string, wordlist string) (errors *multierror.Error) {
-	// if s.URLFile != "" {
-	// 	s.Scan = false
-	// 	inputData, err := GetDataFromFile(s.URLFile)
-	// 	if err != nil {
-	// 		panic(err)
-	// 	}
-	// 	for item := range inputData {
-	// 		continue
-	// 		// s.URLComponents
-	// 	}
-	// 	return
-	// }
+func Initialise(s *State, ports string, wordlist string, statusCodesIgn string, protocols string) (errors *multierror.Error) {
+	if s.URLFile != "" {
+		s.Scan = false
+		inputData, err := GetDataFromFile(s.URLFile)
+		if err != nil {
+			panic(err)
+		}
+
+		for _, item := range inputData {
+			// s.URLComponents
+			h, err := ParseURLToHost(item)
+			if err != nil {
+				continue
+			}
+			s.URLComponents = append(s.URLComponents, h)
+		}
+		return
+	}
 	if ports != "" {
 		for _, port := range StrArrToInt(strings.Split(ports, ",")) {
 			if v := int(math.Pow(2, 16.0)); 0 > port || port >= v {
@@ -60,21 +63,22 @@ func Initialise(s *State, ports string, wordlist string) (errors *multierror.Err
 		}
 		s.Hosts = targetList
 	}
-	c2 := make(chan []Host)
-	go GenerateURLs(s.Hosts, s.Protocol, s.Ports, &s.Paths, c2)
-	s.URLComponents = <-c2
+	s.StatusCodesIgn = IntSet{map[int]bool{}}
+	for code, _ := range StrArrToInt(strings.Split(statusCodesIgn, ",")) {
+		s.StatusCodesIgn.Add(code)
+	}
 
+	c2 := make(chan []Host)
+	s.Protocols = StringSet{map[string]bool{}}
+	for _, p := range strings.Split(protocols, ",") {
+		s.Protocols.Add(p)
+	}
+	go GenerateURLs(s.Hosts, s.Protocols, s.Ports, &s.Paths, c2)
+	s.URLComponents = <-c2
 	return
 }
 
 func Start(s State) {
-	workers := s.Threads
-
-	indexChan := make(chan string, 1000)
-	configChan := make(chan string, 1000)
-	writeChan := make(chan []byte, 1000)
-
-	// go writerWorker(writeChan, s.OutputFile)
 
 	if s.Scan {
 		fmt.Printf("Starting Port Scanner\n")
@@ -82,31 +86,24 @@ func Start(s State) {
 			fmt.Printf("Testing %v host:port combinations\n", len(s.URLComponents))
 		}
 		fmt.Printf(LineSep())
-		// AliveHosts := []Host{}
-
 		s.URLComponents = ScanHosts(&s)
-		// for AliveHost := range hostChan {
-		// 	AliveHosts = append(AliveHosts, AliveHost)
-		// }
-		// s.URLComponents = AliveHosts
-		for _, URLComponent := range s.URLComponents {
-			fmt.Printf("%v:%v is alive\n", URLComponent.HostAddr, URLComponent.Port)
-		}
+
+		fmt.Printf(LineSep())
 	}
-	// go statusUpdater()
-	wg := sync.WaitGroup{}
+	if s.Dirbust {
+		fmt.Printf("Starting Dirbuster\n")
+		if s.Debug {
+			fmt.Printf("Testing %v URLs\n", len(s.URLComponents)*len(s.Paths.Set))
+		}
+		fmt.Printf(LineSep())
 
-	if false {
-		wg.Add(1)
-		finput := make(chan struct{})
-		go routineManager(finput, workers, indexChan, configChan, writeChan, &wg)
-		/*for x := 0; x < workers; x++ {
-			go taskWorker(indexChan, configChan, writeChan, stopChan, stopped)
-		}*/
-
-		close(finput)
-		filled = true
-		wg.Wait()
-		time.Sleep(time.Second * 5)
+		s.URLComponents = DirbustHosts(&s)
+		if s.Debug {
+			fmt.Println(s.URLComponents)
+		}
+		for _, h := range s.URLComponents {
+			fmt.Printf("%v: %v (%v) %v\n", h.HostAddr, h.Paths.Set, h.Port, h.Protocols.Set)
+		}
+		fmt.Printf(LineSep())
 	}
 }

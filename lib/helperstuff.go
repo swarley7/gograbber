@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -23,10 +24,10 @@ type StringSet struct {
 }
 
 type Host struct {
-	Paths    StringSet
-	HostAddr string
-	Port     int
-	Protocol string
+	Paths     StringSet
+	HostAddr  string
+	Port      int
+	Protocols StringSet
 }
 
 var tx = &http.Transport{
@@ -226,12 +227,39 @@ func ChunkString(s string, chunkSize int) []string {
 	return chunks
 }
 
-func GenerateURLs(targetList StringSet, Protocol string, Ports IntSet, Paths *StringSet, ch chan []Host) {
+func GenerateURLs(targetList StringSet, Protocols StringSet, Ports IntSet, Paths *StringSet, ch chan []Host) {
 	var HostStructs []Host
 	for target, _ := range targetList.Set {
 		for port, _ := range Ports.Set {
-			HostStructs = append(HostStructs, Host{Port: port, Protocol: Protocol, HostAddr: target, Paths: *Paths})
+			HostStructs = append(HostStructs, Host{Port: port, Protocols: Protocols, HostAddr: target, Paths: *Paths})
 		}
 	}
 	ch <- HostStructs
+}
+
+func ParseURLToHost(URL string) (host Host, err error) {
+	URLObj, err := url.ParseRequestURI(URL)
+	if err != nil {
+		// URL isn't valid
+		return
+	}
+	port := URLObj.Port()
+	var Port int
+	if port != "" {
+		Port, err = strconv.Atoi(port)
+	} else {
+		if URLObj.Scheme == strings.ToLower("http") {
+			Port = 80
+		} else if URLObj.Scheme == strings.ToLower("https") {
+			Port = 443
+		} else {
+			fmt.Println(URLObj.Scheme)
+			return
+		}
+	}
+	paths := StringSet{Set: map[string]bool{}}
+	paths.Add(URLObj.RawQuery)
+	scheme := StringSet{Set: map[string]bool{}}
+	scheme.Add(URLObj.Scheme)
+	return Host{HostAddr: URLObj.Hostname(), Paths: paths, Protocols: scheme, Port: Port}, err
 }

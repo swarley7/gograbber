@@ -21,12 +21,13 @@ type State struct {
 	ProxyURL       *url.URL
 	Quiet          bool
 	ShowIPs        bool
-	Protocol       string
+	Protocols      StringSet
 	StatusCodes    IntSet
 	StatusCodesIgn IntSet
 	Screenshot     bool
 	Threads        int
 	URLFile        string
+	Dirbust        bool
 	URLComponents  []Host
 	Paths          StringSet
 	UseSlash       bool
