@@ -22,6 +22,7 @@ A horizontal and vertical web content enumerator by swarley7 (@swarley777)
 # Acks
 
 - OJ Reeves: this project borrows heavily from `github.com/OJ/gobuster` (which is awesome, btw.) so thanks!
+- Aquatone (name?): this project was heavily inspired by aquatone (which is also awesome)
 - C_Sto: thx for forcing me to learn Golang and laughing at my extreme incompetence
 
 # Donate?

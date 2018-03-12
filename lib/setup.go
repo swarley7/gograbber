@@ -10,7 +10,19 @@ import (
 	multierror "github.com/hashicorp/go-multierror"
 )
 
-func Initialise(s *State, ports string) (errors *multierror.Error) {
+func Initialise(s *State, ports string, wordlist string) (errors *multierror.Error) {
+	// if s.URLFile != "" {
+	// 	s.Scan = false
+	// 	inputData, err := GetDataFromFile(s.URLFile)
+	// 	if err != nil {
+	// 		panic(err)
+	// 	}
+	// 	for item := range inputData {
+	// 		continue
+	// 		// s.URLComponents
+	// 	}
+	// 	return
+	// }
 	if ports != "" {
 		for _, port := range StrArrToInt(strings.Split(ports, ",")) {
 			if v := int(math.Pow(2, 16.0)); 0 > port || port >= v {
@@ -22,6 +34,16 @@ func Initialise(s *State, ports string) (errors *multierror.Error) {
 		// for p, _ := range s.Ports.Set {
 		// 	fmt.Printf("%v\n", p)
 		// }
+	}
+	if wordlist != "" {
+		pathData, err := GetDataFromFile(wordlist)
+		if err != nil {
+			panic(err)
+		}
+		s.Paths = StringSet{Set: map[string]bool{}}
+		for _, path := range pathData {
+			s.Paths.Add(path)
+		}
 	}
 	if s.InputFile != "" {
 		inputData, err := GetDataFromFile(s.InputFile)
@@ -39,8 +61,9 @@ func Initialise(s *State, ports string) (errors *multierror.Error) {
 		s.Hosts = targetList
 	}
 	c2 := make(chan []Host)
-	go GenerateURLs(s.Hosts, s.Protocol, s.Ports, s.Paths, c2)
+	go GenerateURLs(s.Hosts, s.Protocol, s.Ports, &s.Paths, c2)
 	s.URLComponents = <-c2
+
 	return
 }
 
@@ -51,7 +74,7 @@ func Start(s State) {
 	configChan := make(chan string, 1000)
 	writeChan := make(chan []byte, 1000)
 
-	go writerWorker(writeChan, s.OutputFile)
+	// go writerWorker(writeChan, s.OutputFile)
 
 	if s.Scan {
 		fmt.Printf("Starting Port Scanner\n")

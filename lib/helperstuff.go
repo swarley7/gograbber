@@ -226,11 +226,11 @@ func ChunkString(s string, chunkSize int) []string {
 	return chunks
 }
 
-func GenerateURLs(targetList StringSet, Protocol string, Ports IntSet, Paths StringSet, ch chan []Host) {
+func GenerateURLs(targetList StringSet, Protocol string, Ports IntSet, Paths *StringSet, ch chan []Host) {
 	var HostStructs []Host
 	for target, _ := range targetList.Set {
 		for port, _ := range Ports.Set {
-			HostStructs = append(HostStructs, Host{Port: port, Protocol: Protocol, HostAddr: target, Paths: Paths})
+			HostStructs = append(HostStructs, Host{Port: port, Protocol: Protocol, HostAddr: target, Paths: *Paths})
 		}
 	}
 	ch <- HostStructs

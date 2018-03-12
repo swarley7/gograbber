@@ -16,7 +16,8 @@ func ScanHosts(s *State) (h []Host) {
 	for _, URLComponent := range s.URLComponents {
 		go connectHost(s, URLComponent, ch, &wg)
 	}
-	wg.Wait() // Why the fuck does it block here?
+	wg.Wait()
+	close(ch)
 
 	for AliveHost := range ch {
 		h = append(h, AliveHost)
@@ -27,7 +28,6 @@ func ScanHosts(s *State) (h []Host) {
 // connectHost does the actual TCP connection
 func connectHost(s *State, host Host, ch chan Host, wg *sync.WaitGroup) {
 	defer wg.Done()
-
 	if s.Debug {
 		fmt.Printf("Port scanning: %v:%v\n", host.HostAddr, host.Port)
 	}

@@ -26,7 +26,7 @@ type State struct {
 	StatusCodesIgn IntSet
 	Screenshot     bool
 	Threads        int
-	URL            string
+	URLFile        string
 	URLComponents  []Host
 	Paths          StringSet
 	UseSlash       bool
