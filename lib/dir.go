@@ -3,9 +3,11 @@ package lib
 import (
 	"errors"
 	"fmt"
+	"math/rand"
 	"net/http"
 	"strings"
 	"sync"
+	"time"
 )
 
 // I want this function to do some intelligent analysis of GET requests. e.g. detect whether 200 is a soft-404, or whether 403 is just a directory access denied
@@ -18,12 +20,16 @@ import (
 func prefetch(host Host, s *State) (h Host, err error) {
 	var url string
 	for scheme, _ := range s.Protocols.Set {
+		if s.Jitter > 0 {
+			jitter := time.Duration(rand.Intn(s.Jitter)) * time.Millisecond
+			fmt.Printf("Jitter: %v\n", jitter)
+			time.Sleep(jitter)
+		}
 		url = fmt.Sprintf("%v://%v:%v", scheme, host.HostAddr, host.Port)
 		client := &http.Client{
 			Transport: tx}
 		resp, err := client.Get(url)
 		// resp.Body.Close()
-
 		if err != nil {
 			if strings.Contains(err.Error(), "http: server gave HTTP response to HTTPS client") {
 				host.Protocol = "http" // we know it's a http port now
@@ -31,9 +37,11 @@ func prefetch(host Host, s *State) (h Host, err error) {
 			}
 			continue
 		} else if resp == nil {
+			resp.Body.Close()
 			continue
 		} else {
 			host.Protocol = scheme
+			resp.Body.Close()
 			return host, nil
 		}
 	}
@@ -91,6 +99,11 @@ func HTTPGetter(s *State, host Host, path string, hostChan chan Host, respChan c
 	if s.Debug {
 		fmt.Printf("Trying URL: %v\n", url)
 	}
+	if s.Jitter > 0 {
+		jitter := time.Duration(rand.Intn(s.Jitter)) * time.Millisecond
+		fmt.Printf("Jitter: %v\n", jitter)
+		time.Sleep(jitter)
+	}
 	client := &http.Client{
 		Transport:     tx,
 		CheckRedirect: func(req *http.Request, via []*http.Request) error { return errors.New("something bad happened") },
@@ -102,7 +115,7 @@ func HTTPGetter(s *State, host Host, path string, hostChan chan Host, respChan c
 	if s.StatusCodesIgn.Contains(resp.StatusCode) {
 		return
 	}
-
+	fmt.Printf("%v - %v\n", url, resp.StatusCode)
 	// host.Protocols = StringSet{map[string]bool{}}
 	// host.Protocols.Add(protocol)
 	respChan <- resp

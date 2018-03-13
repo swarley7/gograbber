@@ -64,7 +64,7 @@ func Initialise(s *State, ports string, wordlist string, statusCodesIgn string, 
 		s.Hosts = targetList
 	}
 	s.StatusCodesIgn = IntSet{map[int]bool{}}
-	for code, _ := range StrArrToInt(strings.Split(statusCodesIgn, ",")) {
+	for _, code := range StrArrToInt(strings.Split(statusCodesIgn, ",")) {
 		s.StatusCodesIgn.Add(code)
 	}
 
@@ -101,9 +101,14 @@ func Start(s State) {
 		if s.Debug {
 			fmt.Println(s.URLComponents)
 		}
-		for _, h := range s.URLComponents {
-			fmt.Printf("%v: %v (%v) %v\n", h.HostAddr, h.Paths.Set, h.Port, h.Protocol)
+		fmt.Printf(LineSep())
+	}
+	if s.Screenshot {
+		fmt.Printf("Starting Screenshotter\n")
+		if s.Debug {
+			fmt.Printf("Testing %v URLs\n", len(s.URLComponents)*len(s.Paths.Set))
 		}
+		s.URLComponents = Screenshot(&s)
 		fmt.Printf(LineSep())
 	}
 }

@@ -14,11 +14,13 @@ func parseCMDLine() *lib.State {
 	var ports string
 	var wordlist string
 	var statusCodesIgn string
+	var statusCodes string
 	var protocols string
 	// Commandline arguments
 	flag.IntVar(&s.Threads, "t", 20, "Number of concurrent threads")
-	flag.StringVar(&ports, "p", "80", "Comma-separated ports to test with port scanner or directory bruteforce (defaults to http/80)")
+	flag.StringVar(&ports, "p", "80", "Comma-separated ports to test with port scanner or directory bruteforce")
 	flag.StringVar(&wordlist, "w", "", "Wordlist file containing line separated endpoints to directory bruteforce")
+	flag.IntVar(&s.Jitter, "j", 0, "Introduce random delay (in milliseconds) between requests")
 
 	flag.BoolVar(&s.Debug, "debug", false, "Enable debug info")
 	flag.BoolVar(&s.Scan, "scan", false, "Enable host discovery/TCP port scanner")
@@ -26,12 +28,16 @@ func parseCMDLine() *lib.State {
 	flag.BoolVar(&s.Screenshot, "screenshot", false, "Take pretty pictures of discovered URLs")
 
 	flag.StringVar(&s.InputFile, "i", "", "Input filename of line seperated targets (hosts, IPs, CIDR ranges)")
-	flag.StringVar(&s.URLFile, "u", "", "Input filename of line seperated complete URLs to test (overwrites -i, -p, -P, -w, --scan)")
+	flag.StringVar(&s.URLFile, "U", "", "Input filename of line seperated complete URLs to test (overwrites -i, -p, -P, -w, --scan)")
+	flag.StringVar(&s.SingleURL, "u", "", "Single input URL to test (overwrites -i, -p, -P, -w, --scan)")
+
 	// I am very drunk right now
-	flag.StringVar(&s.OutputFile, "o", "", "Output filename")
+
+	flag.StringVar(&s.OutputDirectory, "o", "", "Directory to store output in")
 	flag.StringVar(&protocols, "P", "http,https", "If provided, each host will be tested for the given protocol")
 	flag.BoolVar(&s.Quiet, "q", false, "Don't print the banner and other noise")
-	flag.StringVar(&statusCodesIgn, "s", "401,403", "Output filename")
+	flag.StringVar(&statusCodesIgn, "s", "401,403,404,407", "HTTP Status codes to ignore")
+	flag.StringVar(&statusCodes, "S", "200,301,302,500", "HTTP Status codes to record")
 
 	flag.Parse()
 

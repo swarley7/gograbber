@@ -1,2 +1,3 @@
-/test
-/index.html
+index.html
+/
+/asdfkljsdlfkj

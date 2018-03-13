@@ -2,6 +2,7 @@ package lib
 
 import (
 	"fmt"
+	"math/rand"
 	"net"
 	"sync"
 	"time"
@@ -30,6 +31,11 @@ func connectHost(s *State, host Host, ch chan Host, wg *sync.WaitGroup) {
 	defer wg.Done()
 	if s.Debug {
 		fmt.Printf("Port scanning: %v:%v\n", host.HostAddr, host.Port)
+	}
+	if s.Jitter > 0 {
+		jitter := time.Duration(rand.Intn(s.Jitter)) * time.Millisecond
+		fmt.Printf("Jitter: %v\n", jitter)
+		time.Sleep(jitter)
 	}
 	d := net.Dialer{Timeout: 5 * time.Second}
 	conn, err := d.Dial("tcp", fmt.Sprintf("%v:%v", host.HostAddr, host.Port))
