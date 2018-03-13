@@ -24,10 +24,10 @@ type StringSet struct {
 }
 
 type Host struct {
-	Paths     StringSet
-	HostAddr  string
-	Port      int
-	Protocols StringSet
+	Paths    StringSet
+	HostAddr string
+	Port     int
+	Protocol string
 }
 
 var tx = &http.Transport{
@@ -77,12 +77,15 @@ func ExpandHosts(targets []string, ch chan StringSet) {
 	allHosts := StringSet{Set: map[string]bool{}} // Initialise the hosts list... nfi why this is a thing?
 	for _, target := range targets {
 		ips, err := Hosts(target)
-		if err != nil { // Not a CIDR... Might be a straight IP or url
+		if err != nil { // Not a CIDR... Might be a straight IP or hostname
 			ip := net.ParseIP(target)
-			if ip == nil {
-				continue
+			if ip != nil {
+				allHosts.Add(ip.String())
+			} else {
+				// could be hostname, i'll add it anyway... fuckit. DNS will solv this problem later
+				allHosts.Add(target)
 			}
-			allHosts.Add(ip.String())
+
 		}
 		allHosts.AddRange(ips)
 	}
@@ -227,11 +230,11 @@ func ChunkString(s string, chunkSize int) []string {
 	return chunks
 }
 
-func GenerateURLs(targetList StringSet, Protocols StringSet, Ports IntSet, Paths *StringSet, ch chan []Host) {
+func GenerateURLs(targetList StringSet, Ports IntSet, Paths *StringSet, ch chan []Host) {
 	var HostStructs []Host
 	for target, _ := range targetList.Set {
 		for port, _ := range Ports.Set {
-			HostStructs = append(HostStructs, Host{Port: port, Protocols: Protocols, HostAddr: target, Paths: *Paths})
+			HostStructs = append(HostStructs, Host{Port: port, HostAddr: target, Paths: *Paths})
 		}
 	}
 	ch <- HostStructs
@@ -259,7 +262,5 @@ func ParseURLToHost(URL string) (host Host, err error) {
 	}
 	paths := StringSet{Set: map[string]bool{}}
 	paths.Add(URLObj.RawQuery)
-	scheme := StringSet{Set: map[string]bool{}}
-	scheme.Add(URLObj.Scheme)
-	return Host{HostAddr: URLObj.Hostname(), Paths: paths, Protocols: scheme, Port: Port}, err
+	return Host{HostAddr: URLObj.Hostname(), Paths: paths, Port: Port}, err
 }

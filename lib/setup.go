@@ -73,7 +73,7 @@ func Initialise(s *State, ports string, wordlist string, statusCodesIgn string, 
 	for _, p := range strings.Split(protocols, ",") {
 		s.Protocols.Add(p)
 	}
-	go GenerateURLs(s.Hosts, s.Protocols, s.Ports, &s.Paths, c2)
+	go GenerateURLs(s.Hosts, s.Ports, &s.Paths, c2)
 	s.URLComponents = <-c2
 	return
 }
@@ -102,7 +102,7 @@ func Start(s State) {
 			fmt.Println(s.URLComponents)
 		}
 		for _, h := range s.URLComponents {
-			fmt.Printf("%v: %v (%v) %v\n", h.HostAddr, h.Paths.Set, h.Port, h.Protocols.Set)
+			fmt.Printf("%v: %v (%v) %v\n", h.HostAddr, h.Paths.Set, h.Port, h.Protocol)
 		}
 		fmt.Printf(LineSep())
 	}
