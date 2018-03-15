@@ -19,7 +19,7 @@ import (
 // Returns error if endpoint is not a valid webserver. Prevents
 func prefetch(host Host, s *State) (h Host, err error) {
 	var url string
-	for scheme, _ := range s.Protocols.Set {
+	for scheme := range s.Protocols.Set {
 		if s.Jitter > 0 {
 			jitter := time.Duration(rand.Intn(s.Jitter)) * time.Millisecond
 			fmt.Printf("Jitter: %v\n", jitter)
@@ -58,8 +58,11 @@ func DirbustHosts(s *State) (h []Host) {
 	respChan := make(chan *http.Response, s.Threads)
 
 	var wg sync.WaitGroup
-	wg.Add(len(s.URLComponents) * len(s.Paths.Set))
-
+	if !s.URLProvided || len(s.Paths.Set) != 0 {
+		wg.Add(len(s.URLComponents) * len(s.Paths.Set))
+	} else {
+		wg.Add(len(s.URLComponents))
+	}
 	for _, URLComponent := range s.URLComponents {
 		go distributeHTTPRequests(s, URLComponent, hostChan, respChan, &wg)
 	}
@@ -75,17 +78,19 @@ func DirbustHosts(s *State) (h []Host) {
 }
 
 func distributeHTTPRequests(s *State, host Host, hostChan chan Host, respChan chan *http.Response, wg *sync.WaitGroup) {
-	host, err := prefetch(host, s)
-	// fmt.Println(host, err)
-	if err != nil {
-		wg.Add(len(host.Paths.Set) * -1) // Host is not going to be dirbusted - lets rm the ol' badboy
-		return
+	if !s.URLProvided {
+		host, err := prefetch(host, s)
+		// fmt.Println(host, err)
+		if err != nil {
+			wg.Add(len(host.Paths.Set) * -1) // Host is not going to be dirbusted - lets rm the ol' badboy
+			return
+		}
+		if host.Protocol == "" {
+			wg.Add(len(host.Paths.Set) * -1) // Host is not going to be dirbusted - lets rm the ol' badboy
+			return
+		}
 	}
-	if host.Protocol == "" {
-		wg.Add(len(host.Paths.Set) * -1) // Host is not going to be dirbusted - lets rm the ol' badboy
-		return
-	}
-	for path, _ := range host.Paths.Set {
+	for path := range host.Paths.Set {
 		go HTTPGetter(s, host, path, hostChan, respChan, wg)
 	}
 }

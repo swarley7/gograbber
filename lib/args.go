@@ -26,9 +26,12 @@ type State struct {
 	Protocols       StringSet
 	StatusCodes     IntSet
 	StatusCodesIgn  IntSet
+	ImgX            int
+	ImgY            int
 	Screenshot      bool
 	Threads         int
 	URLFile         string
+	URLProvided     bool
 	Dirbust         bool
 	SingleURL       string
 	URLComponents   []Host

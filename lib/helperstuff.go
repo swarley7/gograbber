@@ -262,5 +262,5 @@ func ParseURLToHost(URL string) (host Host, err error) {
 	}
 	paths := StringSet{Set: map[string]bool{}}
 	paths.Add(URLObj.RawQuery)
-	return Host{HostAddr: URLObj.Hostname(), Paths: paths, Port: Port}, err
+	return Host{HostAddr: URLObj.Hostname(), Paths: paths, Protocol: URLObj.Scheme, Port: Port}, err
 }
