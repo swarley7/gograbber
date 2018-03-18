@@ -24,10 +24,11 @@ type StringSet struct {
 }
 
 type Host struct {
-	Paths    StringSet
-	HostAddr string
-	Port     int
-	Protocol string
+	Paths              StringSet
+	HostAddr           string
+	Port               int
+	Protocol           string
+	ScreenshotFilename string
 }
 
 var tx = &http.Transport{

@@ -22,10 +22,15 @@ func prefetch(host Host, s *State) (h Host, err error) {
 	for scheme := range s.Protocols.Set {
 		if s.Jitter > 0 {
 			jitter := time.Duration(rand.Intn(s.Jitter)) * time.Millisecond
-			fmt.Printf("Jitter: %v\n", jitter)
+			if s.Debug {
+				fmt.Printf("Jitter: %v\n", jitter)
+			}
 			time.Sleep(jitter)
 		}
 		url = fmt.Sprintf("%v://%v:%v", scheme, host.HostAddr, host.Port)
+		if s.Debug {
+			fmt.Printf("Prefetch URL: %v\n", url)
+		}
 		client := &http.Client{
 			Transport: tx}
 		resp, err := client.Get(url)
@@ -78,8 +83,9 @@ func DirbustHosts(s *State) (h []Host) {
 }
 
 func distributeHTTPRequests(s *State, host Host, hostChan chan Host, respChan chan *http.Response, wg *sync.WaitGroup) {
+	var err error
 	if !s.URLProvided {
-		host, err := prefetch(host, s)
+		host, err = prefetch(host, s)
 		// fmt.Println(host, err)
 		if err != nil {
 			wg.Add(len(host.Paths.Set) * -1) // Host is not going to be dirbusted - lets rm the ol' badboy
@@ -89,6 +95,7 @@ func distributeHTTPRequests(s *State, host Host, hostChan chan Host, respChan ch
 			wg.Add(len(host.Paths.Set) * -1) // Host is not going to be dirbusted - lets rm the ol' badboy
 			return
 		}
+
 	}
 	for path := range host.Paths.Set {
 		go HTTPGetter(s, host, path, hostChan, respChan, wg)
@@ -106,7 +113,9 @@ func HTTPGetter(s *State, host Host, path string, hostChan chan Host, respChan c
 	}
 	if s.Jitter > 0 {
 		jitter := time.Duration(rand.Intn(s.Jitter)) * time.Millisecond
-		fmt.Printf("Jitter: %v\n", jitter)
+		if s.Debug {
+			fmt.Printf("Jitter: %v\n", jitter)
+		}
 		time.Sleep(jitter)
 	}
 	client := &http.Client{

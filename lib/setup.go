@@ -3,8 +3,10 @@ package lib
 import (
 	"fmt"
 	"math"
+	"os"
 	"strings"
 
+	"github.com/benbjohnson/phantomjs"
 	multierror "github.com/hashicorp/go-multierror"
 )
 
@@ -38,7 +40,8 @@ func Initialise(s *State, ports string, wordlist string, statusCodesIgn string, 
 				}
 				s.URLComponents = append(s.URLComponents, h)
 			}
-		} else if s.SingleURL != "" {
+		}
+		if s.SingleURL != "" {
 			h, err := ParseURLToHost(s.SingleURL)
 			if err == nil {
 				s.URLComponents = append(s.URLComponents, h)
@@ -91,7 +94,17 @@ func Initialise(s *State, ports string, wordlist string, statusCodesIgn string, 
 
 // Start does the thing
 func Start(s State) {
-
+	if s.Screenshot {
+		s.PhantomProcess = phantomjs.Process{BinPath: s.PhantomJSPath,
+			Port:   phantomjs.DefaultPort,
+			Stdout: os.Stdout,
+			Stderr: os.Stderr}
+		if err := s.PhantomProcess.Open(); err != nil {
+			panic(err)
+		}
+		os.Mkdir(s.OutputDirectory, 0755) // drwxr-xr-x
+		defer phantomjs.DefaultProcess.Close()
+	}
 	if s.Scan {
 		fmt.Printf("Starting Port Scanner\n")
 		if s.Debug {
@@ -126,6 +139,7 @@ func Start(s State) {
 		if s.Debug {
 			fmt.Printf("Testing %v URLs\n", len(s.URLComponents)*len(s.Paths.Set))
 		}
+		fmt.Printf(LineSep())
 		s.URLComponents = Screenshot(&s)
 		fmt.Printf(LineSep())
 	}

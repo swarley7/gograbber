@@ -36,11 +36,12 @@ func parseCMDLine() *lib.State {
 	// I am very drunk right now
 	flag.StringVar(&s.PhantomJSPath, "phantomjs", "phantomjs", "Path to phantomjs binary for rendering web pages")
 
-	flag.StringVar(&s.OutputDirectory, "o", "", "Directory to store output in")
+	flag.StringVar(&s.OutputDirectory, "o", "screenshots", "Directory to store output in")
 	flag.StringVar(&protocols, "P", "http,https", "If provided, each host will be tested for the given protocol")
 	flag.BoolVar(&s.Quiet, "q", false, "Don't print the banner and other noise")
 	flag.StringVar(&statusCodesIgn, "s", "401,403,404,407", "HTTP Status codes to ignore")
 	flag.StringVar(&statusCodes, "S", "200,301,302,500", "HTTP Status codes to record")
+	flag.IntVar(&s.ScreenshotQuality, "Q", 50, "Screenshot quality as a percentage (higher means more megatronz per screenshot).")
 
 	flag.Parse()
 
@@ -54,7 +55,6 @@ func parseCMDLine() *lib.State {
 			log.Println(http.ListenAndServe("localhost:6060", nil))
 		}()
 	}
-
 	return &s
 }
 
