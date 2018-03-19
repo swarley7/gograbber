@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"os"
+	"path"
 	"strings"
 
 	"github.com/benbjohnson/phantomjs"
@@ -94,6 +95,7 @@ func Initialise(s *State, ports string, wordlist string, statusCodesIgn string, 
 
 // Start does the thing
 func Start(s State) {
+	os.Mkdir(path.Join(s.OutputDirectory), 0755) // drwxr-xr-x
 	if s.Screenshot {
 		s.PhantomProcess = phantomjs.Process{BinPath: s.PhantomJSPath,
 			Port:   phantomjs.DefaultPort,
@@ -102,8 +104,9 @@ func Start(s State) {
 		if err := s.PhantomProcess.Open(); err != nil {
 			panic(err)
 		}
-		os.Mkdir(s.OutputDirectory, 0755) // drwxr-xr-x
-		defer phantomjs.DefaultProcess.Close()
+		defer s.PhantomProcess.Close()
+		s.ScreenshotDirectory = path.Join(s.OutputDirectory, "screenshots")
+		os.Mkdir(s.ScreenshotDirectory, 0755) // drwxr-xr-x
 	}
 	if s.Scan {
 		fmt.Printf("Starting Port Scanner\n")

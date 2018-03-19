@@ -1,1 +1,34 @@
 package lib
+
+import (
+	"bytes"
+	"fmt"
+	"os"
+	"path"
+	"strings"
+	"time"
+)
+
+func MarkdownReport(s *State) {
+	var report bytes.Buffer
+	currTime := strings.Replace(time.Now().Format(time.RFC3339), ":", "_", -1)
+	reportFile := path.Join(s.ReportDirectory, fmt.Sprintf("%v_Report.md", currTime))
+	file, err := os.Create(reportFile)
+	if err != nil {
+		panic(err)
+	}
+	// Header
+	report.WriteString(fmt.Sprintf("# Gograbber report - %v (%v)\n", s.ProjectName, currTime))
+	for _, url := range s.URLComponents {
+		report.WriteString(fmt.Sprintf("%v\n", url))
+	}
+	file.WriteString(report.String())
+}
+
+func TextOutput(s *State) {
+
+}
+
+func JSONify(s *State) {
+
+}

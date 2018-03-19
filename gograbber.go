@@ -28,6 +28,7 @@ func parseCMDLine() *lib.State {
 	flag.BoolVar(&s.Screenshot, "screenshot", false, "Take pretty pictures of discovered URLs")
 	flag.IntVar(&s.ImgX, "img_x", 1024, "The width of screenshot images in pixels")
 	flag.IntVar(&s.ImgY, "img_y", 800, "The height of screenshot images in pixels")
+	flag.StringVar(&s.ProjectName, "project", "", "Name this project (if you want, otherwise... whatever?)")
 
 	flag.StringVar(&s.InputFile, "i", "", "Input filename of line seperated targets (hosts, IPs, CIDR ranges)")
 	flag.StringVar(&s.URLFile, "U", "", "Input filename of line seperated complete URLs to test (overwrites -i, -p, -P, -w, --scan)")
@@ -36,7 +37,7 @@ func parseCMDLine() *lib.State {
 	// I am very drunk right now
 	flag.StringVar(&s.PhantomJSPath, "phantomjs", "phantomjs", "Path to phantomjs binary for rendering web pages")
 
-	flag.StringVar(&s.OutputDirectory, "o", "screenshots", "Directory to store output in")
+	flag.StringVar(&s.OutputDirectory, "o", "gograbber_output", "Directory to store output in")
 	flag.StringVar(&protocols, "P", "http,https", "If provided, each host will be tested for the given protocol")
 	flag.BoolVar(&s.Quiet, "q", false, "Don't print the banner and other noise")
 	flag.StringVar(&statusCodesIgn, "s", "401,403,404,407", "HTTP Status codes to ignore")
