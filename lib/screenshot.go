@@ -30,18 +30,20 @@ func Screenshot(s *State) (h []Host) {
 	hostChan := make(chan Host, s.Threads)
 	respChan := make(chan *http.Response, s.Threads)
 
-	var wg sync.WaitGroup
+	wg := sync.WaitGroup{}
 	for _, URLComponent := range s.URLComponents {
 		wg.Add(1)
 		go distributeScreenshotWorkers(s, URLComponent, hostChan, respChan, &wg)
 	}
+
+	go func() {
+		for url := range hostChan {
+			h = append(h, url)
+		}
+	}()
 	wg.Wait()
 	close(hostChan)
 	close(respChan)
-
-	for url := range hostChan {
-		h = append(h, url)
-	}
 	// write resps to file? return hosts for now
 	return h
 }
@@ -58,15 +60,17 @@ func distributeScreenshotWorkers(s *State, host Host, hostChan chan Host, respCh
 func ScreenshotAURL(s *State, host Host, path string, hostChan chan Host, respChan chan *http.Response, wg *sync.WaitGroup) (err error) {
 	defer wg.Done()
 	page, err := s.PhantomProcess.CreateWebPage()
-	defer page.Close()
+	url := fmt.Sprintf("%v://%v:%v/%v", host.Protocol, host.HostAddr, host.Port, path)
+
 	if err != nil {
-		fmt.Println(err)
+		fmt.Printf("Unable to Create webpage: %v (%v)\n", url, err)
 		return err
 	}
+	defer page.Close()
+
 	if strings.HasPrefix(path, "/") {
 		path = path[1:] // strip preceding '/' char
 	}
-	url := fmt.Sprintf("%v://%v:%v/%v", host.Protocol, host.HostAddr, host.Port, path)
 	if s.Debug {
 		fmt.Printf("Trying to screenshot URL: %v\n", url)
 	}
@@ -78,13 +82,13 @@ func ScreenshotAURL(s *State, host Host, path string, hostChan chan Host, respCh
 		time.Sleep(jitter)
 	}
 	if err := page.Open(url); err != nil {
-		fmt.Println(err)
+		fmt.Printf("Unable to open page: %v (%v)\n", url, err)
 		return err
 	}
 
 	// Setup the viewport and render the results view.
 	if err := page.SetViewportSize(s.ImgX, s.ImgY); err != nil {
-		fmt.Println(err)
+		fmt.Printf("Unable to set Viewport size: %v (%v)\n", url, err)
 		return err
 	}
 	currTime := strings.Replace(time.Now().Format(time.RFC3339), ":", "_", -1)
@@ -96,7 +100,7 @@ func ScreenshotAURL(s *State, host Host, path string, hostChan chan Host, respCh
 	}
 	fmt.Println(screenshotFilename)
 	if err := page.Render(screenshotFilename, "png", s.ScreenshotQuality); err != nil {
-		fmt.Println(err)
+		fmt.Printf("Unable to save Screenshot: %v (%v)\n", url, err)
 		return err
 	}
 	host.ScreenshotFilename = screenshotFilename

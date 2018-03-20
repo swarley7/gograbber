@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -31,4 +32,9 @@ func TextOutput(s *State) {
 
 func JSONify(s *State) {
 
+}
+
+func SanitiseFilename(UnsanitisedFilename string) (filename string) {
+	r := regexp.MustCompile("[0-9a-zA-Z-._]")
+	return r.ReplaceAllString(UnsanitisedFilename, "[0-9a-zA-Z-._]")
 }

@@ -1,9 +1,6 @@
 package lib
 
 import (
-	"net/url"
-	"os"
-
 	"github.com/benbjohnson/phantomjs"
 )
 
@@ -29,7 +26,6 @@ type State struct {
 	Ports                  IntSet
 	Jitter                 int
 	Sleep                  float64
-	ProxyURL               *url.URL
 	Quiet                  bool
 	ShowIPs                bool
 	Protocols              StringSet
@@ -53,6 +49,4 @@ type State struct {
 	Verbose                bool
 	Wordlist               string
 	OutputDirectory        string
-	SignalChan             chan os.Signal
-	Terminate              bool
 }

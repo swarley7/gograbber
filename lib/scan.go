@@ -12,17 +12,19 @@ import (
 func ScanHosts(s *State) (h []Host) {
 	ch := make(chan Host, s.Threads)
 	var wg sync.WaitGroup
-	wg.Add(len(s.URLComponents))
 
 	for _, URLComponent := range s.URLComponents {
+		wg.Add(1)
 		go connectHost(s, URLComponent, ch, &wg)
 	}
+
+	go func() {
+		for AliveHost := range ch {
+			h = append(h, AliveHost)
+		}
+	}()
 	wg.Wait()
 	close(ch)
-
-	for AliveHost := range ch {
-		h = append(h, AliveHost)
-	}
 	return h
 }
 
@@ -37,7 +39,7 @@ func connectHost(s *State, host Host, ch chan Host, wg *sync.WaitGroup) {
 		fmt.Printf("Jitter: %v\n", jitter)
 		time.Sleep(jitter)
 	}
-	d := net.Dialer{Timeout: 5 * time.Second}
+	d := net.Dialer{Timeout: time.Duration(3 * time.Second)}
 	conn, err := d.Dial("tcp", fmt.Sprintf("%v:%v", host.HostAddr, host.Port))
 	if err == nil {
 		fmt.Printf("%v:%v OPEN\n", host.HostAddr, host.Port)

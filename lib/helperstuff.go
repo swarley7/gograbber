@@ -34,12 +34,12 @@ type Host struct {
 var tx = &http.Transport{
 	DialContext: (&net.Dialer{
 		//transports don't have default timeouts because having sensible defaults would be too good
-		Timeout: 5 * time.Second,
+		Timeout: 2 * time.Second,
 	}).DialContext,
-	TLSHandshakeTimeout:   10 * time.Second,
+	TLSHandshakeTimeout:   5 * time.Second,
 	MaxIdleConns:          100, //This could potentially be dropped to 1, we aren't going to hit the same server more than once ever
-	IdleConnTimeout:       5 * time.Second,
-	ExpectContinueTimeout: 1 * time.Second,
+	IdleConnTimeout:       2 * time.Second,
+	ExpectContinueTimeout: 3 * time.Second,
 	DisableKeepAlives:     true,
 	DisableCompression:    true,
 	TLSClientConfig:       &tls.Config{InsecureSkipVerify: true},
