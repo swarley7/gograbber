@@ -74,8 +74,8 @@ func inc(ip net.IP) {
 }
 
 // ExpandHosts takes a string array of IP addresses/CIDR masks and converts into a string array of pure IP addresses
-func ExpandHosts(targets []string, ch chan StringSet) {
-	allHosts := StringSet{Set: map[string]bool{}} // Initialise the hosts list... nfi why this is a thing?
+func ExpandHosts(targets []string) (allHosts StringSet) {
+	allHosts = StringSet{Set: map[string]bool{}} // Initialise the hosts list... nfi why this is a thing?
 	for _, target := range targets {
 		ips, err := Hosts(target)
 		if err != nil { // Not a CIDR... Might be a straight IP or hostname
@@ -90,7 +90,7 @@ func ExpandHosts(targets []string, ch chan StringSet) {
 		}
 		allHosts.AddRange(ips)
 	}
-	ch <- allHosts
+	return allHosts
 }
 
 // LeftPad2Len https://github.com/DaddyOh/golang-samples/blob/master/pad.go
@@ -231,14 +231,13 @@ func ChunkString(s string, chunkSize int) []string {
 	return chunks
 }
 
-func GenerateURLs(targetList StringSet, Ports IntSet, Paths *StringSet, ch chan []Host) {
-	var HostStructs []Host
+func GenerateURLs(targetList StringSet, Ports IntSet, Paths *StringSet) (HostStructs []Host) {
 	for target, _ := range targetList.Set {
 		for port, _ := range Ports.Set {
 			HostStructs = append(HostStructs, Host{Port: port, HostAddr: target, Paths: *Paths})
 		}
 	}
-	ch <- HostStructs
+	return HostStructs
 }
 
 func ParseURLToHost(URL string) (host Host, err error) {
@@ -264,4 +263,12 @@ func ParseURLToHost(URL string) (host Host, err error) {
 	paths := StringSet{Set: map[string]bool{}}
 	paths.Add(URLObj.RawQuery)
 	return Host{HostAddr: URLObj.Hostname(), Paths: paths, Protocol: URLObj.Scheme, Port: Port}, err
+}
+
+func makeRange(min, max int) []int {
+	a := make([]int, max-min+1)
+	for i := range a {
+		a[i] = min + i
+	}
+	return a
 }

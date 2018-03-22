@@ -20,8 +20,15 @@ func MarkdownReport(s *State) {
 	}
 	// Header
 	report.WriteString(fmt.Sprintf("# Gograbber report - %v (%v)\n", s.ProjectName, currTime))
-	for _, url := range s.URLComponents {
-		report.WriteString(fmt.Sprintf("%v\n", url))
+	for _, URLComponent := range s.URLComponents {
+		var path string
+		for a := range URLComponent.Paths.Set {
+			path = a
+		}
+		url := fmt.Sprintf("%v://%v:%v/%v\n", URLComponent.Protocol, URLComponent.HostAddr, URLComponent.Port, path)
+		report.WriteString(fmt.Sprintf("## %v\n", url))
+		report.WriteString(fmt.Sprintf("![%v](%v)\n", URLComponent.ScreenshotFilename, URLComponent.ScreenshotFilename))
+
 	}
 	file.WriteString(report.String())
 }

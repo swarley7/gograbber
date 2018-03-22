@@ -27,7 +27,7 @@ func parseCMDLine() *lib.State {
 	flag.BoolVar(&s.Scan, "scan", false, "Enable host discovery/TCP port scanner")
 
 	flag.StringVar(&s.InputFile, "i", "", "Input filename of line seperated targets (hosts, IPs, CIDR ranges)")
-	flag.StringVar(&ports, "p", "80", "Comma-separated ports to test with port scanner or directory bruteforce")
+	flag.StringVar(&ports, "p", "80", "Comma-separated ports to test with port scanner or directory bruteforce. Predefined port ranges are defined by 'small', 'med', 'large', 'full'")
 
 	// I am very drunk right now
 
@@ -35,7 +35,7 @@ func parseCMDLine() *lib.State {
 	flag.BoolVar(&s.Dirbust, "d", false, "Perform dirbust-like directory brute force of hosts using provided wordlist")
 
 	flag.StringVar(&protocols, "P", "http,https", "If provided, each host will be tested for the given protocol")
-	flag.StringVar(&statusCodesIgn, "s", "401,403,404,407", "HTTP Status codes to ignore")
+	flag.StringVar(&statusCodesIgn, "s", "400,401,403,404,407", "HTTP Status codes to ignore")
 	flag.StringVar(&statusCodes, "S", "200,301,302,500", "HTTP Status codes to record")
 	flag.StringVar(&s.URLFile, "U", "", "Input filename of line seperated complete URLs to test (overwrites -i, -p, -P, -w, --scan)")
 	flag.StringVar(&s.SingleURL, "u", "", "Single input URL to test (overwrites -i, -p, -P, -w, --scan)")

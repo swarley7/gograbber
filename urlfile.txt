@@ -1,4 +1,0 @@
-http://adfs.asdf.asdf/alsjkdf?a
-https://adfs.asdf.asdf/alsjkdf?a
-http://adfs.asdf.asdf:4994/?a
-http://10.1.1.1:234/alsjkdf?a

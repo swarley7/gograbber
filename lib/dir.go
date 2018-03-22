@@ -59,7 +59,7 @@ func prefetch(host Host, s *State) (h Host, err error) {
 
 func DirbustHosts(s *State) (h []Host) {
 	hostChan := make(chan Host, s.Threads)
-	respChan := make(chan *http.Response, s.Threads)
+	// respChan := make(chan *http.Response, s.Threads)
 
 	wg := sync.WaitGroup{}
 	// go func() {
@@ -70,7 +70,7 @@ func DirbustHosts(s *State) (h []Host) {
 	// }()
 	for _, URLComponent := range s.URLComponents {
 		wg.Add(1)
-		go distributeHTTPRequests(s, URLComponent, hostChan, respChan, &wg)
+		go distributeHTTPRequests(s, URLComponent, hostChan, &wg)
 	}
 
 	go func() {
@@ -80,12 +80,12 @@ func DirbustHosts(s *State) (h []Host) {
 	}()
 	wg.Wait()
 	close(hostChan)
-	close(respChan)
+	// close(respChan)
 	// write resps to file? return hosts for now
 	return h
 }
 
-func distributeHTTPRequests(s *State, host Host, hostChan chan Host, respChan chan *http.Response, wg *sync.WaitGroup) {
+func distributeHTTPRequests(s *State, host Host, hostChan chan Host, wg *sync.WaitGroup) {
 	defer wg.Done()
 	var err error
 	if !s.URLProvided {
@@ -101,11 +101,11 @@ func distributeHTTPRequests(s *State, host Host, hostChan chan Host, respChan ch
 	}
 	for path := range host.Paths.Set {
 		wg.Add(1)
-		go HTTPGetter(s, host, path, hostChan, respChan, wg)
+		go HTTPGetter(s, host, path, hostChan, wg)
 	}
 }
 
-func HTTPGetter(s *State, host Host, path string, hostChan chan Host, respChan chan *http.Response, wg *sync.WaitGroup) {
+func HTTPGetter(s *State, host Host, path string, hostChan chan Host, wg *sync.WaitGroup) {
 	defer wg.Done()
 	// debug
 	if strings.HasPrefix(path, "/") {
@@ -142,6 +142,5 @@ func HTTPGetter(s *State, host Host, path string, hostChan chan Host, respChan c
 	// host.Protocols.Add(protocol)
 	host.Paths = StringSet{map[string]bool{}}
 	host.Paths.Add(path)
-	respChan <- resp
 	hostChan <- host
 }

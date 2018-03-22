@@ -52,6 +52,7 @@ func Initialise(s *State, ports string, wordlist string, statusCodesIgn string, 
 		return
 	}
 	if ports != "" {
+
 		for _, port := range StrArrToInt(strings.Split(ports, ",")) {
 			if v := int(math.Pow(2, 16.0)); 0 > port || port >= v {
 				fmt.Printf("Port: (%v) is invalid!\n", port)
@@ -68,9 +69,9 @@ func Initialise(s *State, ports string, wordlist string, statusCodesIgn string, 
 		if err != nil {
 			panic(err)
 		}
-		c := make(chan StringSet)
-		go ExpandHosts(inputData, c)
-		targetList := <-c
+		// c := make(chan StringSet)
+		targetList := ExpandHosts(inputData)
+		//  := <-c
 		if s.Debug {
 			for target := range targetList.Set {
 				fmt.Printf("Target: %v\n", target)
@@ -83,13 +84,12 @@ func Initialise(s *State, ports string, wordlist string, statusCodesIgn string, 
 		s.StatusCodesIgn.Add(code)
 	}
 
-	c2 := make(chan []Host)
+	// c2 := make(chan []Host)
 	s.Protocols = StringSet{map[string]bool{}}
 	for _, p := range strings.Split(protocols, ",") {
 		s.Protocols.Add(p)
 	}
-	go GenerateURLs(s.Hosts, s.Ports, &s.Paths, c2)
-	s.URLComponents = <-c2
+	s.URLComponents = GenerateURLs(s.Hosts, s.Ports, &s.Paths)
 	return
 }
 
@@ -146,4 +146,11 @@ func Start(s State) {
 		s.URLComponents = Screenshot(&s)
 		fmt.Printf(LineSep())
 	}
+	fmt.Printf("Starting Reporter\n")
+	if s.Debug {
+		fmt.Printf("Reporting on %v URLs\n", len(s.URLComponents)*len(s.Paths.Set))
+	}
+	fmt.Printf(LineSep())
+	MarkdownReport(&s)
+	fmt.Printf(LineSep())
 }

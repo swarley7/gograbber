@@ -1,6 +1,0 @@
-10.1.1.0/28
-1.1.1.1
-hats.com
-email
-example.com
-www.hats.com
