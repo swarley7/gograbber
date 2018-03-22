@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"crypto/tls"
 	"fmt"
+	"math/rand"
 	"net"
 	"net/http"
 	"net/url"
@@ -24,11 +25,13 @@ type StringSet struct {
 }
 
 type Host struct {
-	Paths              StringSet
-	HostAddr           string
-	Port               int
-	Protocol           string
-	ScreenshotFilename string
+	Paths                     StringSet
+	HostAddr                  string
+	Port                      int
+	Protocol                  string
+	ScreenshotFilename        string
+	Soft404RandomURL          string
+	Soft404RandomPageContents []string
 }
 
 var tx = &http.Transport{
@@ -271,4 +274,21 @@ func makeRange(min, max int) []int {
 		a[i] = min + i
 	}
 	return a
+}
+
+const charset = "abcdefghijklmnopqrstuvwxyz0123456789"
+
+var seededRand *rand.Rand = rand.New(
+	rand.NewSource(time.Now().UnixNano()))
+
+func StringWithCharset(length int, charset string) string {
+	b := make([]byte, length)
+	for i := range b {
+		b[i] = charset[seededRand.Intn(len(charset))]
+	}
+	return string(b)
+}
+
+func RandString(length int) string {
+	return StringWithCharset(length, charset)
 }

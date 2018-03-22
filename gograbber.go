@@ -40,6 +40,9 @@ func parseCMDLine() *lib.State {
 	flag.StringVar(&s.URLFile, "U", "", "Input filename of line seperated complete URLs to test (overwrites -i, -p, -P, -w, --scan)")
 	flag.StringVar(&s.SingleURL, "u", "", "Single input URL to test (overwrites -i, -p, -P, -w, --scan)")
 	flag.StringVar(&wordlist, "w", "", "Wordlist file containing line separated endpoints to directory bruteforce")
+	flag.Float64Var(&s.Ratio, "r", 0.90, "")
+	flag.BoolVar(&s.Soft404Detection, "soft404", true, "Perform soft 404 detection")
+	flag.IntVar(&s.Soft404Method, "m", 1, "1: simple (less overhead), 2: aggressive (a lot more requests!)")
 
 	// Reporting
 	flag.StringVar(&s.OutputDirectory, "o", "gograbber_output", "Directory to store output in")
