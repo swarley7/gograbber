@@ -32,15 +32,15 @@ func parseCMDLine() *lib.State {
 	// I am very drunk right now
 
 	// Dirbust related
-	flag.BoolVar(&s.Dirbust, "d", false, "Perform dirbust-like directory brute force of hosts using provided wordlist")
+	flag.BoolVar(&s.Dirbust, "dirbust", false, "Perform dirbust-like directory brute force of hosts using provided wordlist")
 
 	flag.StringVar(&protocols, "P", "http,https", "If provided, each host will be tested for the given protocol")
 	flag.StringVar(&statusCodesIgn, "s", "400,401,403,404,407", "HTTP Status codes to ignore")
 	flag.StringVar(&statusCodes, "S", "200,301,302,500", "HTTP Status codes to record")
-	flag.StringVar(&s.URLFile, "U", "", "Input filename of line seperated complete URLs to test (overwrites -i, -p, -P, -w, --scan)")
-	flag.StringVar(&s.SingleURL, "u", "", "Single input URL to test (overwrites -i, -p, -P, -w, --scan)")
+	flag.StringVar(&s.URLFile, "U", "", "Input filename of line seperated complete URLs to test (overwrites -i, -p, -P, -w, -scan)")
+	flag.StringVar(&s.SingleURL, "u", "", "Single input URL to test (overwrites -i, -p, -P, -w, -scan)")
 	flag.StringVar(&wordlist, "w", "", "Wordlist file containing line separated endpoints to directory bruteforce")
-	flag.Float64Var(&s.Ratio, "r", 0.90, "")
+	flag.Float64Var(&s.Ratio, "r", 0.95, "Soft 404 detection comparison ratio.")
 	flag.BoolVar(&s.Soft404Detection, "soft404", true, "Perform soft 404 detection")
 	flag.IntVar(&s.Soft404Method, "m", 1, "1: simple (less overhead), 2: aggressive (a lot more requests!)")
 

@@ -33,9 +33,7 @@ func prefetch(host Host, s *State) (h Host, err error) {
 		if s.Debug {
 			fmt.Printf("Prefetch URL: %v\n", url)
 		}
-		client := &http.Client{
-			Transport: tx}
-		resp, err := client.Get(url)
+		resp, err := cl.Get(url)
 		// resp.Body.Close()
 		if err != nil {
 			if strings.Contains(err.Error(), "http: server gave HTTP response to HTTPS client") {
@@ -104,7 +102,7 @@ func distributeHTTPRequests(s *State, host Host, hostChan chan Host, wg *sync.Wa
 	}
 	if s.Soft404Detection {
 		randURL := fmt.Sprintf("%v://%v:%v/%v", host.Protocol, host.HostAddr, host.Port, RandString(16))
-		randResp, err := http.Get(randURL)
+		randResp, err := cl.Get(randURL)
 		if err != nil {
 			panic(err)
 		}
@@ -113,6 +111,7 @@ func distributeHTTPRequests(s *State, host Host, hostChan chan Host, wg *sync.Wa
 			panic(err)
 		}
 		randResp.Body.Close()
+		host.Soft404RandomURL = randURL
 		host.Soft404RandomPageContents = strings.Split(string(data), " ")
 	}
 	for path := range host.Paths.Set {
@@ -144,8 +143,7 @@ func HTTPGetter(s *State, host Host, path string, hostChan chan Host, wg *sync.W
 	// }
 	// client := &http.Client{
 	// 	Transport: tx}
-	client := http.Client{Timeout: time.Duration(5 * time.Second)}
-	resp, err := client.Get(url)
+	resp, err := cl.Get(url)
 	if err != nil {
 		return
 	}
@@ -156,7 +154,7 @@ func HTTPGetter(s *State, host Host, path string, hostChan chan Host, wg *sync.W
 	if s.Soft404Detection {
 		soft404Ratio := detectSoft404(resp, host.Soft404RandomPageContents)
 		if soft404Ratio > s.Ratio {
-			fmt.Printf("[%v] is very similar to [%v] (%v% match)\n", url, host.Soft404RandomURL, soft404Ratio)
+			fmt.Printf("[%v] is very similar to [%v] (%.5%% match)\n", url, host.Soft404RandomURL, (soft404Ratio * 100))
 			return
 		}
 
