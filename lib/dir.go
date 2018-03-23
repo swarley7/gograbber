@@ -151,7 +151,7 @@ func HTTPGetter(s *State, host Host, path string, hostChan chan Host, wg *sync.W
 	if s.StatusCodesIgn.Contains(resp.StatusCode) {
 		return
 	}
-	if s.Soft404Detection {
+	if s.Soft404Detection && path != "/" {
 		soft404Ratio := detectSoft404(resp, host.Soft404RandomPageContents)
 		if soft404Ratio > s.Ratio {
 			fmt.Printf("[%v] is very similar to [%v] (%.5%% match)\n", url, host.Soft404RandomURL, (soft404Ratio * 100))
