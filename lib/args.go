@@ -29,7 +29,7 @@ type State struct {
 	Ports                  IntSet
 	Jitter                 int
 	Sleep                  float64
-	Quiet                  bool
+	VerbosityLevel         int
 	ShowIPs                bool
 	Protocols              StringSet
 	StatusCodes            IntSet

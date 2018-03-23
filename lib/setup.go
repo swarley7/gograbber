@@ -13,6 +13,7 @@ import (
 
 // Initialise sets up the program's state
 func Initialise(s *State, ports string, wordlist string, statusCodesIgn string, protocols string) (errors *multierror.Error) {
+
 	s.URLProvided = false
 	if wordlist != "" {
 		pathData, err := GetDataFromFile(wordlist)
@@ -151,6 +152,7 @@ func Start(s State) {
 		fmt.Printf("Reporting on %v URLs\n", len(s.URLComponents)*len(s.Paths.Set))
 	}
 	fmt.Printf(LineSep())
+	s.ReportDirectory = path.Join(s.OutputDirectory, "report")
 	MarkdownReport(&s)
 	fmt.Printf(LineSep())
 }

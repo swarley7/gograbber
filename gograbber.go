@@ -21,7 +21,7 @@ func parseCMDLine() *lib.State {
 	flag.IntVar(&s.Threads, "t", 20, "Number of concurrent threads")
 	flag.IntVar(&s.Jitter, "j", 0, "Introduce random delay (in milliseconds) between requests")
 	flag.BoolVar(&s.Debug, "debug", false, "Enable debug info")
-	flag.BoolVar(&s.Quiet, "q", false, "Don't print the banner and other noise")
+	flag.IntVar(&s.VerbosityLevel, "v", 1, "Sets the logging/verbosity level.")
 
 	// Scanner related
 	flag.BoolVar(&s.Scan, "scan", false, "Enable host discovery/TCP port scanner")
