@@ -153,6 +153,7 @@ func Start(s State) {
 	}
 	fmt.Printf(LineSep())
 	s.ReportDirectory = path.Join(s.OutputDirectory, "report")
+	os.Mkdir(s.ReportDirectory, 0755) // drwxr-xr-x
 	MarkdownReport(&s)
 	fmt.Printf(LineSep())
 }

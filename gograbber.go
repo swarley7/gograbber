@@ -35,7 +35,7 @@ func parseCMDLine() *lib.State {
 	flag.BoolVar(&s.Dirbust, "dirbust", false, "Perform dirbust-like directory brute force of hosts using provided wordlist")
 
 	flag.StringVar(&protocols, "P", "http,https", "If provided, each host will be tested for the given protocol")
-	flag.StringVar(&statusCodesIgn, "s", "400,401,403,404,407", "HTTP Status codes to ignore")
+	flag.StringVar(&statusCodesIgn, "s", "400,401,403,404,407,502", "HTTP Status codes to ignore")
 	flag.StringVar(&statusCodes, "S", "200,301,302,500", "HTTP Status codes to record")
 	flag.StringVar(&s.URLFile, "U", "", "Input filename of line seperated complete URLs to test (overwrites -i, -p, -P, -w, -scan)")
 	flag.StringVar(&s.SingleURL, "u", "", "Single input URL to test (overwrites -i, -p, -P, -w, -scan)")
