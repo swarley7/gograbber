@@ -52,6 +52,7 @@ func parseCMDLine() *lib.State {
 	flag.BoolVar(&s.Screenshot, "screenshot", false, "Take pretty pictures of discovered URLs")
 	flag.IntVar(&s.ImgX, "img_x", 1024, "The width of screenshot images in pixels")
 	flag.IntVar(&s.ImgY, "img_y", 800, "The height of screenshot images in pixels")
+	flag.StringVar(&s.DisplayEnvVar, "d", ":0.0", "If required, set a different variable for env['DISPLAY']")
 	flag.IntVar(&s.ScreenshotQuality, "Q", 50, "Screenshot quality as a percentage (higher means more megatronz per screenshot).")
 	flag.StringVar(&s.PhantomJSPath, "phantomjs", "phantomjs", "Path to phantomjs binary for rendering web pages")
 
@@ -74,7 +75,7 @@ func main() {
 	//profiling code - handy when dealing with concurrency and deadlocks ._.
 
 	state := parseCMDLine()
-	lib.PrintOpts(state)
+	// lib.PrintOpts(state)
 	if state != nil {
 		// dothething awww ye
 		lib.Start(*state)

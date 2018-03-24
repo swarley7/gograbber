@@ -7,8 +7,8 @@ import (
 	"path"
 	"strings"
 
-	"github.com/benbjohnson/phantomjs"
 	multierror "github.com/hashicorp/go-multierror"
+	"github.com/swarley7/phantomjs"
 )
 
 // Initialise sets up the program's state

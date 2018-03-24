@@ -17,6 +17,7 @@ type State struct {
 	ProjectName            string
 	DirbustOutputDirectory string
 	IncludeLength          bool
+	DisplayEnvVar          string
 	Ratio                  float64
 	Soft404Detection       bool
 	Soft404Method          int
