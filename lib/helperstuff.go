@@ -43,7 +43,7 @@ var tx = &http.Transport{
 	MaxIdleConns:          100, //This could potentially be dropped to 1, we aren't going to hit the same server more than once ever
 	IdleConnTimeout:       2 * time.Second,
 	ExpectContinueTimeout: 3 * time.Second,
-	DisableKeepAlives:     true,
+	DisableKeepAlives:     false, //keep things alive if possible - reuse connections
 	DisableCompression:    true,
 	TLSClientConfig:       &tls.Config{InsecureSkipVerify: true},
 }

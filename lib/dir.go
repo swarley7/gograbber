@@ -1,7 +1,6 @@
 package lib
 
 import (
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"math/rand"
@@ -138,13 +137,13 @@ func HTTPGetter(s *State, host Host, path string, hostChan chan Host, wg *sync.W
 		}
 		time.Sleep(jitter)
 	}
-	client := &http.Client{
-		Transport:     tx,
-		CheckRedirect: func(req *http.Request, via []*http.Request) error { return errors.New("something bad happened") },
-	}
+	// client := &http.Client{
+	// 	Transport:     tx,
+	// 	CheckRedirect: func(req *http.Request, via []*http.Request) error { return errors.New("something bad happened") },
+	// }
 	// client := &http.Client{
 	// 	Transport: tx}
-	resp, err := client.Get(url)
+	resp, err := cl.Get(url)
 	if err != nil {
 		return
 	}
