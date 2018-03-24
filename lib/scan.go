@@ -36,7 +36,9 @@ func connectHost(s *State, host Host, ch chan Host, wg *sync.WaitGroup) {
 	}
 	if s.Jitter > 0 {
 		jitter := time.Duration(rand.Intn(s.Jitter)) * time.Millisecond
-		fmt.Printf("Jitter: %v\n", jitter)
+		if s.Debug {
+			fmt.Printf("Jitter: %v\n", jitter)
+		}
 		time.Sleep(jitter)
 	}
 	d := net.Dialer{Timeout: time.Duration(3 * time.Second)}

@@ -25,7 +25,7 @@ $$\   $$ |          $$\   $$ |
 
 	var version = "0.1a"
 	var author = "swarley (@swarley777)"
-	if s.VerbosityLevel < 1 {
+	if s.VerbosityLevel > 0 {
 		g := color.New(color.FgGreen, color.Bold)
 
 		fmt.Printf("%v\n", strings.Replace(banner, "$", g.Sprintf("$"), -1))

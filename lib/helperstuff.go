@@ -37,7 +37,7 @@ type Host struct {
 var tx = &http.Transport{
 	DialContext: (&net.Dialer{
 		//transports don't have default timeouts because having sensible defaults would be too good
-		Timeout: 2 * time.Second,
+		Timeout: 3 * time.Second,
 	}).DialContext,
 	TLSHandshakeTimeout:   5 * time.Second,
 	MaxIdleConns:          100, //This could potentially be dropped to 1, we aren't going to hit the same server more than once ever
@@ -50,7 +50,7 @@ var tx = &http.Transport{
 
 var cl = http.Client{
 	Transport: tx,
-	Timeout:   time.Second * 5, //eyy no reasonable timeout on clients too!
+	Timeout:   time.Second * 10, //eyy no reasonable timeout on clients too!
 }
 
 func Hosts(cidr string) ([]string, error) {
