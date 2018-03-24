@@ -43,7 +43,7 @@ func PrintOpts(s *State) {
 	fmt.Printf(LineSep())
 	keys := reflect.ValueOf(s).Elem()
 	typeOfT := keys.Type()
-	if s.Debug {
+	if s.VerbosityLevel > 4 {
 		for i := 0; i < keys.NumField(); i++ {
 			f := keys.Field(i)
 			fmt.Printf("%s: = %v\n", typeOfT.Field(i).Name, f.Interface())
