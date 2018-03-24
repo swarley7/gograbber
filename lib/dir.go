@@ -116,11 +116,11 @@ func distributeHTTPRequests(s *State, host Host, hostChan chan Host, wg *sync.Wa
 	}
 	for path := range host.Paths.Set {
 		wg.Add(1)
-		go HTTPGetter(host, s.Debug, s.Jitter, s.StatusCodesIgn, s.Ratio, path, hostChan, wg)
+		go HTTPGetter(host, s.Debug, s.Jitter, s.Soft404Detection, s.StatusCodesIgn, s.Ratio, path, hostChan, wg)
 	}
 }
 
-func HTTPGetter(host Host, debug bool, jitter int, statusCodesIgn IntSet, Ratio float64, path string, hostChan chan Host, wg *sync.WaitGroup) {
+func HTTPGetter(host Host, debug bool, jitter int, soft404Detection bool, statusCodesIgn IntSet, Ratio float64, path string, hostChan chan Host, wg *sync.WaitGroup) {
 	defer wg.Done()
 	// debug
 	if strings.HasPrefix(path, "/") {
@@ -148,10 +148,10 @@ func HTTPGetter(host Host, debug bool, jitter int, statusCodesIgn IntSet, Ratio 
 		return
 	}
 	defer resp.Body.Close()
-	if StatusCodesIgn.Contains(resp.StatusCode) {
+	if statusCodesIgn.Contains(resp.StatusCode) {
 		return
 	}
-	if Soft404Detection && path != "/" {
+	if soft404Detection && path != "/" {
 		soft404Ratio := detectSoft404(resp, host.Soft404RandomPageContents)
 		if soft404Ratio > Ratio {
 			fmt.Printf("[%v] is very similar to [%v] (%.5f%% match)\n", url, host.Soft404RandomURL, (soft404Ratio * 100))
