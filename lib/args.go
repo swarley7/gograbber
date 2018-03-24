@@ -1,7 +1,7 @@
 package lib
 
 import (
-	"github.com/swarley7/phantomjs"
+	"github.com/benbjohnson/phantomjs"
 )
 
 type State struct {
