@@ -110,6 +110,8 @@ func Start(s State) {
 		os.Mkdir(s.ScreenshotDirectory, 0755) // drwxr-xr-x
 	}
 	if s.Scan {
+		fmt.Printf(LineSep())
+
 		fmt.Printf("Starting Port Scanner\n")
 		if s.Debug {
 			fmt.Printf("Testing %v host:port combinations\n", len(s.URLComponents))

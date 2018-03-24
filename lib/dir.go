@@ -124,7 +124,7 @@ func distributeHTTPRequests(s *State, host Host, hostChan chan Host, wg *sync.Wa
 func HTTPGetter(s *State, host Host, path string, hostChan chan Host, wg *sync.WaitGroup) {
 	defer wg.Done()
 	// debug
-	if strings.HasPrefix(path, "/") {
+	if strings.HasPrefix(path, "/") && path != "/" {
 		path = path[1:] // strip preceding '/' char
 	}
 	url := fmt.Sprintf("%v://%v:%v/%v", host.Protocol, host.HostAddr, host.Port, path)
