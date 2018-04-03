@@ -9,7 +9,7 @@ type State struct {
 	Expanded               bool
 	Extensions             []string
 	FollowRedirect         bool
-	PhantomProcess         phantomjs.Process
+	PhantomProcesses       []phantomjs.Process
 	ScreenshotQuality      int
 	ScreenshotDirectory    string
 	ReportDirectory        string

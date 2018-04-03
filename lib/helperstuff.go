@@ -53,7 +53,7 @@ var tx = &http.Transport{
 
 var cl = http.Client{
 	Transport: tx,
-	Timeout:   time.Second * 10, //eyy no reasonable timeout on clients too!
+	Timeout:   time.Second * 5, //eyy no reasonable timeout on clients too!
 }
 
 func Hosts(cidr string) ([]string, error) {
