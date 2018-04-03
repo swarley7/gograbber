@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-func MarkdownReport(s *State) {
+func MarkdownReport(s *State) string {
 	var report bytes.Buffer
 	currTime := strings.Replace(time.Now().Format(time.RFC3339), ":", "_", -1)
 	reportFile := path.Join(s.ReportDirectory, fmt.Sprintf("%v_Report.md", currTime))
@@ -31,6 +31,7 @@ func MarkdownReport(s *State) {
 
 	}
 	file.WriteString(report.String())
+	return reportFile
 }
 
 func TextOutput(s *State) {

@@ -3,10 +3,11 @@ package lib
 import (
 	"fmt"
 	"math/rand"
-	"net/http"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/benbjohnson/phantomjs"
 )
 
 func Screenshot(s *State) (h []Host) {
@@ -28,7 +29,6 @@ func Screenshot(s *State) (h []Host) {
 	// 	break
 	// }
 	hostChan := make(chan Host, s.Threads)
-	respChan := make(chan *http.Response, s.Threads)
 
 	wg := sync.WaitGroup{}
 	targetHost := make(TargetHost, s.Threads)
@@ -40,7 +40,7 @@ func Screenshot(s *State) (h []Host) {
 			wg.Add(1) //MAKE SURE SCREENSHOTURL HAS A DONE CALL IN IT JFC
 			routineId := Counter{cnt}
 			targetHost <- routineId
-			go targetHost.ScreenshotAURL(s, cnt, host, path, hostChan, respChan, &wg)
+			go targetHost.ScreenshotAURL(s, cnt, host, path, hostChan, &wg)
 			cnt++
 		}
 	}
@@ -52,7 +52,6 @@ func Screenshot(s *State) (h []Host) {
 	}()
 	wg.Wait()
 	close(hostChan)
-	close(respChan)
 	// write resps to file? return hosts for now
 	return h
 }
@@ -66,9 +65,10 @@ func Screenshot(s *State) (h []Host) {
 // 	}
 // }
 
-func (target TargetHost) ScreenshotAURL(s *State, cnt int, host Host, path string, hostChan chan Host, respChan chan *http.Response, wg *sync.WaitGroup) (err error) {
+func (target TargetHost) ScreenshotAURL(s *State, cnt int, host Host, path string, hostChan chan Host, wg *sync.WaitGroup) (err error) {
 	defer wg.Done()
 	page, err := s.PhantomProcesses[cnt%len(s.PhantomProcesses)].CreateWebPage()
+	page.SetSettings(phantomjs.WebPageSettings{ResourceTimeout: s.Timeout}) // Time out the page if it takes too long to load. Sometimes JS is fucky and takes wicked long to do nothing forever :(
 	url := fmt.Sprintf("%v://%v:%v/%v", host.Protocol, host.HostAddr, host.Port, path)
 
 	if err != nil {
@@ -98,7 +98,6 @@ func (target TargetHost) ScreenshotAURL(s *State, cnt int, host Host, path strin
 
 		return err
 	}
-
 	// Setup the viewport and render the results view.
 	if err := page.SetViewportSize(s.ImgX, s.ImgY); err != nil {
 		fmt.Printf("Unable to set Viewport size: %v (%v)\n", url, err)

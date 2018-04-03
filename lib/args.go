@@ -1,6 +1,8 @@
 package lib
 
 import (
+	"time"
+
 	"github.com/benbjohnson/phantomjs"
 )
 
@@ -30,6 +32,7 @@ type State struct {
 	Ports                  IntSet
 	Jitter                 int
 	Sleep                  float64
+	Timeout                time.Duration
 	VerbosityLevel         int
 	ShowIPs                bool
 	Protocols              StringSet

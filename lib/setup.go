@@ -1,19 +1,34 @@
 package lib
 
 import (
+	"flag"
 	"fmt"
 	"math"
 	"os"
 	"path"
 	"strings"
+	"time"
 
 	"github.com/benbjohnson/phantomjs"
 	multierror "github.com/hashicorp/go-multierror"
 )
 
 // Initialise sets up the program's state
-func Initialise(s *State, ports string, wordlist string, statusCodesIgn string, protocols string) (errors *multierror.Error) {
+func Initialise(s *State, ports string, wordlist string, statusCodesIgn string, protocols string, timeout int, AdvancedUsage bool) (errors *multierror.Error) {
+	if AdvancedUsage {
 
+		var Usage = func() {
+			fmt.Printf(LineSep())
+			fmt.Fprintf(os.Stderr, "Advanced usage of %s:\n", os.Args[0])
+			flag.PrintDefaults()
+			fmt.Printf(LineSep())
+			fmt.Printf("Examples for %s:\n", os.Args[0])
+			fmt.Println()
+		}
+		Usage()
+		os.Exit(0)
+	}
+	s.Timeout = time.Duration(timeout) * time.Second
 	s.URLProvided = false
 	if wordlist != "" {
 		pathData, err := GetDataFromFile(wordlist)
@@ -91,15 +106,17 @@ func Initialise(s *State, ports string, wordlist string, statusCodesIgn string, 
 		s.Protocols.Add(p)
 	}
 	s.URLComponents = GenerateURLs(s.Hosts, s.Ports, &s.Paths)
+	// fmt.Println(s)
+	if !s.Dirbust && !s.Scan && !s.Screenshot && !s.URLProvided {
+		flag.Usage()
+		os.Exit(1)
+	}
 	return
 }
 
 // Start does the thing
 func Start(s State) {
 	os.Mkdir(path.Join(s.OutputDirectory), 0755) // drwxr-xr-x
-	if s.Screenshot {
-
-	}
 	if s.Scan {
 		fmt.Printf(LineSep())
 
@@ -133,8 +150,16 @@ func Start(s State) {
 	}
 	if s.Screenshot {
 		fmt.Printf("Starting Screenshotter\n")
-		procs := make([]phantomjs.Process, s.Threads/10)
-		for i := 0; i < s.Threads/10; i++ {
+		// Allocate phantom processes sensibly
+		numTargets := (len(s.URLComponents) * len(s.Paths.Set)) / 10
+		var numProcs = 10
+		if numTargets <= 10 {
+			numProcs = 1
+		} else if x := s.Threads / 10; numTargets > x {
+			numProcs = x
+		}
+		procs := make([]phantomjs.Process, numProcs)
+		for i := 0; i < numProcs; i++ {
 			procs[i] = phantomjs.Process{BinPath: s.PhantomJSPath,
 				Port:   phantomjs.DefaultPort + i,
 				Stdout: os.Stdout,
@@ -162,6 +187,7 @@ func Start(s State) {
 	fmt.Printf(LineSep())
 	s.ReportDirectory = path.Join(s.OutputDirectory, "report")
 	os.Mkdir(s.ReportDirectory, 0755) // drwxr-xr-x
-	MarkdownReport(&s)
+	reportFile := MarkdownReport(&s)
+	fmt.Printf("Report written to: [%v]\n", reportFile)
 	fmt.Printf(LineSep())
 }

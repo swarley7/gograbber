@@ -16,9 +16,13 @@ func parseCMDLine() *lib.State {
 	var statusCodesIgn string
 	var statusCodes string
 	var protocols string
+	var timeout int
+	var AdvancedUsage bool
 	// Commandline arguments
 	// Global
 	flag.IntVar(&s.Threads, "t", 20, "Number of concurrent threads")
+	flag.IntVar(&timeout, "T", 3, "Timeout for HTTP connections")
+
 	flag.IntVar(&s.Jitter, "j", 0, "Introduce random delay (in ms) between requests")
 	// flag.IntVar(&s.Sleep, "sleep", 0, "Minimum sleep (in ms) between requests")
 	flag.BoolVar(&s.Debug, "debug", false, "Enable debug info")
@@ -56,11 +60,11 @@ func parseCMDLine() *lib.State {
 	flag.StringVar(&s.DisplayEnvVar, "d", ":0.0", "If required, set a different variable for env['DISPLAY']")
 	flag.IntVar(&s.ScreenshotQuality, "Q", 50, "Screenshot quality as a percentage (higher means more megatronz per screenshot).")
 	flag.StringVar(&s.PhantomJSPath, "phantomjs", "phantomjs", "Path to phantomjs binary for rendering web pages")
+	flag.BoolVar(&AdvancedUsage, "hh", false, "Print advanced usage details with examples!")
 
 	flag.Parse()
-
 	lib.PrintBanner(&s)
-	if err := lib.Initialise(&s, ports, wordlist, statusCodesIgn, protocols); err.ErrorOrNil() != nil {
+	if err := lib.Initialise(&s, ports, wordlist, statusCodesIgn, protocols, timeout, AdvancedUsage); err.ErrorOrNil() != nil {
 		fmt.Printf("%s\n", err.Error())
 		return nil
 	}

@@ -43,7 +43,7 @@ func (target TargetHost) connectHost(s *State, host Host, ch chan Host, wg *sync
 		}
 		time.Sleep(jitter)
 	}
-	d := net.Dialer{Timeout: time.Duration(3 * time.Second)}
+	d := net.Dialer{Timeout: s.Timeout}
 	conn, err := d.Dial("tcp", fmt.Sprintf("%v:%v", host.HostAddr, host.Port))
 	if err == nil {
 		fmt.Printf("%v:%v OPEN\n", host.HostAddr, host.Port)

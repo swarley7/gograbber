@@ -33,6 +33,7 @@ func prefetch(host Host, s *State) (h Host, err error) {
 		if s.Debug {
 			fmt.Printf("Prefetch URL: %v\n", url)
 		}
+		cl.Timeout = s.Timeout
 		resp, err := cl.Get(url)
 		// resp.Body.Close()
 		if err != nil {
@@ -70,8 +71,8 @@ func DirbustHosts(s *State) (h []Host) {
 	// 	}
 	// }()
 	targetHost := make(TargetHost, s.Threads)
-
-	for id, host := range s.URLComponents {
+	var cnt int
+	for _, host := range s.URLComponents {
 		var err error
 		if !s.URLProvided {
 			host, err = prefetch(host, s)
@@ -86,6 +87,7 @@ func DirbustHosts(s *State) (h []Host) {
 		}
 		if s.Soft404Detection {
 			randURL := fmt.Sprintf("%v://%v:%v/%v", host.Protocol, host.HostAddr, host.Port, RandString(16))
+			cl.Timeout = s.Timeout
 			randResp, err := cl.Get(randURL)
 			if err != nil {
 				continue
@@ -100,12 +102,12 @@ func DirbustHosts(s *State) (h []Host) {
 			host.Soft404RandomURL = randURL
 			host.Soft404RandomPageContents = strings.Split(string(data), " ")
 		}
-		var id2 int = 1
 		for path := range host.Paths.Set {
-			routineId := Counter{id * id2}
+			routineId := Counter{cnt}
 			targetHost <- routineId
 			wg.Add(1)
-			go targetHost.HTTPGetter(host, s.Debug, s.Jitter, s.Soft404Detection, s.StatusCodesIgn, s.Ratio, path, hostChan, &wg)
+			go targetHost.HTTPGetter(host, s.Debug, s.Jitter, s.Soft404Detection, s.StatusCodesIgn, s.Ratio, path, hostChan, &wg, s.Timeout)
+			cnt++
 		}
 	}
 
@@ -155,7 +157,7 @@ func DirbustHosts(s *State) (h []Host) {
 // 	}
 // }
 
-func (target TargetHost) HTTPGetter(host Host, debug bool, jitter int, soft404Detection bool, statusCodesIgn IntSet, Ratio float64, path string, hostChan chan<- Host, wg *sync.WaitGroup) {
+func (target TargetHost) HTTPGetter(host Host, debug bool, jitter int, soft404Detection bool, statusCodesIgn IntSet, Ratio float64, path string, hostChan chan<- Host, wg *sync.WaitGroup, timeout time.Duration) {
 	defer wg.Done()
 	// debug
 	if strings.HasPrefix(path, "/") && len(path) > 0 {
@@ -178,6 +180,7 @@ func (target TargetHost) HTTPGetter(host Host, debug bool, jitter int, soft404De
 	// }
 	// client := &http.Client{
 	// 	Transport: tx}
+	cl.Timeout = timeout
 	resp, err := cl.Get(url)
 	if err != nil {
 		<-target

@@ -35,6 +35,8 @@ type Host struct {
 	ScreenshotFilename        string
 	Soft404RandomURL          string
 	Soft404RandomPageContents []string
+	HTTPResp                  *http.Response
+	HTTPReq                   *http.Request
 }
 
 var tx = &http.Transport{
