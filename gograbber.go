@@ -19,7 +19,8 @@ func parseCMDLine() *lib.State {
 	// Commandline arguments
 	// Global
 	flag.IntVar(&s.Threads, "t", 20, "Number of concurrent threads")
-	flag.IntVar(&s.Jitter, "j", 0, "Introduce random delay (in milliseconds) between requests")
+	flag.IntVar(&s.Jitter, "j", 0, "Introduce random delay (in ms) between requests")
+	// flag.IntVar(&s.Sleep, "sleep", 0, "Minimum sleep (in ms) between requests")
 	flag.BoolVar(&s.Debug, "debug", false, "Enable debug info")
 	flag.IntVar(&s.VerbosityLevel, "v", 1, "Sets the logging/verbosity level.")
 
@@ -36,7 +37,7 @@ func parseCMDLine() *lib.State {
 
 	flag.StringVar(&protocols, "P", "http,https", "If provided, each host will be tested for the given protocol")
 	flag.StringVar(&statusCodesIgn, "s", "400,401,403,404,407,502", "HTTP Status codes to ignore")
-	flag.StringVar(&statusCodes, "S", "200,301,302,500", "HTTP Status codes to record")
+	flag.StringVar(&statusCodes, "S", "200,301,302,405,500", "HTTP Status codes to record")
 	flag.StringVar(&s.URLFile, "U", "", "Input filename of line seperated complete URLs to test (overwrites -i, -p, -P, -w, -scan)")
 	flag.StringVar(&s.SingleURL, "u", "", "Single input URL to test (overwrites -i, -p, -P, -w, -scan)")
 	flag.StringVar(&wordlist, "w", "", "Wordlist file containing line separated endpoints to directory bruteforce")

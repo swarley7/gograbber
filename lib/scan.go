@@ -12,10 +12,12 @@ import (
 func ScanHosts(s *State) (h []Host) {
 	ch := make(chan Host, s.Threads)
 	var wg sync.WaitGroup
-
-	for _, URLComponent := range s.URLComponents {
+	targetHost := make(TargetHost, s.Threads)
+	for id, urlComponent := range s.URLComponents {
 		wg.Add(1)
-		go connectHost(s, URLComponent, ch, &wg)
+		routineId := Counter{id}
+		targetHost <- routineId
+		go targetHost.connectHost(s, urlComponent, ch, &wg)
 	}
 
 	go func() {
@@ -29,7 +31,7 @@ func ScanHosts(s *State) (h []Host) {
 }
 
 // connectHost does the actual TCP connection
-func connectHost(s *State, host Host, ch chan Host, wg *sync.WaitGroup) {
+func (target TargetHost) connectHost(s *State, host Host, ch chan Host, wg *sync.WaitGroup) {
 	defer wg.Done()
 	if s.Debug {
 		fmt.Printf("Port scanning: %v:%v\n", host.HostAddr, host.Port)
@@ -48,4 +50,5 @@ func connectHost(s *State, host Host, ch chan Host, wg *sync.WaitGroup) {
 		ch <- host
 		conn.Close()
 	}
+	<-target
 }

@@ -27,7 +27,7 @@ func MarkdownReport(s *State) {
 		}
 		url := fmt.Sprintf("%v://%v:%v/%v\n", URLComponent.Protocol, URLComponent.HostAddr, URLComponent.Port, path)
 		report.WriteString(fmt.Sprintf("## %v\n", url))
-		report.WriteString(fmt.Sprintf("![%v](%v)\n", URLComponent.ScreenshotFilename, URLComponent.ScreenshotFilename))
+		report.WriteString(fmt.Sprintf("![%v](../../%v)\n", URLComponent.ScreenshotFilename, URLComponent.ScreenshotFilename))
 
 	}
 	file.WriteString(report.String())

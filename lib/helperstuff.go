@@ -14,6 +14,9 @@ import (
 	"time"
 )
 
+type Counter struct{ id int }
+type TargetHost chan Counter
+
 // Shim type for "set" containing ints
 type IntSet struct {
 	Set map[int]bool

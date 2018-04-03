@@ -86,7 +86,7 @@ func DirbustHosts(s *State) (h []Host) {
 	return h
 }
 
-func distributeHTTPRequests(s *State, host Host, hostChan chan Host, wg *sync.WaitGroup) {
+func distributeHTTPRequests(s *State, host Host, hostChan chan<- Host, wg *sync.WaitGroup) {
 	defer wg.Done()
 	var err error
 	if !s.URLProvided {
@@ -120,7 +120,7 @@ func distributeHTTPRequests(s *State, host Host, hostChan chan Host, wg *sync.Wa
 	}
 }
 
-func HTTPGetter(host Host, debug bool, jitter int, soft404Detection bool, statusCodesIgn IntSet, Ratio float64, path string, hostChan chan Host, wg *sync.WaitGroup) {
+func HTTPGetter(host Host, debug bool, jitter int, soft404Detection bool, statusCodesIgn IntSet, Ratio float64, path string, hostChan chan<- Host, wg *sync.WaitGroup) {
 	defer wg.Done()
 	// debug
 	if strings.HasPrefix(path, "/") {
@@ -144,6 +144,55 @@ func HTTPGetter(host Host, debug bool, jitter int, soft404Detection bool, status
 	// client := &http.Client{
 	// 	Transport: tx}
 	resp, err := cl.Get(url)
+	if err != nil {
+		return
+	}
+	defer resp.Body.Close()
+	if statusCodesIgn.Contains(resp.StatusCode) {
+		return
+	}
+	if soft404Detection && path != "/" {
+		soft404Ratio := detectSoft404(resp, host.Soft404RandomPageContents)
+		if soft404Ratio > Ratio {
+			fmt.Printf("[%v] is very similar to [%v] (%.5f%% match)\n", url, host.Soft404RandomURL, (soft404Ratio * 100))
+			return
+		}
+
+	}
+
+	fmt.Printf("%v - %v\n", url, resp.StatusCode)
+	// host.Protocols = StringSet{map[string]bool{}}
+	// host.Protocols.Add(protocol)
+	host.Paths = StringSet{map[string]bool{}}
+	host.Paths.Add(path)
+	hostChan <- host
+}
+
+func HTTPHeader(host Host, debug bool, jitter int, soft404Detection bool, statusCodesIgn IntSet, Ratio float64, path string, hostChan chan<- Host, wg *sync.WaitGroup) {
+	defer wg.Done()
+	// debug
+	if strings.HasPrefix(path, "/") {
+		path = path[1:] // strip preceding '/' char
+	}
+	url := fmt.Sprintf("%v://%v:%v/%v", host.Protocol, host.HostAddr, host.Port, path)
+	if debug {
+		fmt.Printf("Trying URL: %v\n", url)
+	}
+	if jitter > 0 {
+		jitter := time.Duration(rand.Intn(jitter)) * time.Millisecond
+		if debug {
+			fmt.Printf("Jitter: %v\n", jitter)
+		}
+		time.Sleep(jitter)
+	}
+	// client := &http.Client{
+	// 	Transport:     tx,
+	// 	CheckRedirect: func(req *http.Request, via []*http.Request) error { return errors.New("something bad happened") },
+	// }
+	// client := &http.Client{
+	// 	Transport: tx}
+	req, err := http.NewRequest("HEAD", url, nil) // Use head, to save data
+	resp, err := cl.Do(req)
 	if err != nil {
 		return
 	}
