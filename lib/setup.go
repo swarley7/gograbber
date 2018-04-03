@@ -98,21 +98,7 @@ func Initialise(s *State, ports string, wordlist string, statusCodesIgn string, 
 func Start(s State) {
 	os.Mkdir(path.Join(s.OutputDirectory), 0755) // drwxr-xr-x
 	if s.Screenshot {
-		procs := make([]phantomjs.Process, s.Threads/10)
-		for i := 0; i < s.Threads/10; i++ {
-			procs[i] = phantomjs.Process{BinPath: s.PhantomJSPath,
-				Port:   phantomjs.DefaultPort + i,
-				Stdout: os.Stdout,
-				Stderr: os.Stderr}
-			if err := procs[i].Open(); err != nil {
-				panic(err)
-			}
-			defer procs[i].Close()
-		}
-		s.PhantomProcesses = procs
 
-		s.ScreenshotDirectory = path.Join(s.OutputDirectory, "screenshots")
-		os.Mkdir(s.ScreenshotDirectory, 0755) // drwxr-xr-x
 	}
 	if s.Scan {
 		fmt.Printf(LineSep())
@@ -147,6 +133,21 @@ func Start(s State) {
 	}
 	if s.Screenshot {
 		fmt.Printf("Starting Screenshotter\n")
+		procs := make([]phantomjs.Process, s.Threads/10)
+		for i := 0; i < s.Threads/10; i++ {
+			procs[i] = phantomjs.Process{BinPath: s.PhantomJSPath,
+				Port:   phantomjs.DefaultPort + i,
+				Stdout: os.Stdout,
+				Stderr: os.Stderr}
+			if err := procs[i].Open(); err != nil {
+				panic(err)
+			}
+			defer procs[i].Close()
+		}
+		s.PhantomProcesses = procs
+
+		s.ScreenshotDirectory = path.Join(s.OutputDirectory, "screenshots")
+		os.Mkdir(s.ScreenshotDirectory, 0755) // drwxr-xr-x
 		if s.Debug {
 			fmt.Printf("Testing %v URLs\n", len(s.URLComponents)*len(s.Paths.Set))
 		}

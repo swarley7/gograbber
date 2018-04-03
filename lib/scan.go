@@ -47,8 +47,8 @@ func (target TargetHost) connectHost(s *State, host Host, ch chan Host, wg *sync
 	conn, err := d.Dial("tcp", fmt.Sprintf("%v:%v", host.HostAddr, host.Port))
 	if err == nil {
 		fmt.Printf("%v:%v OPEN\n", host.HostAddr, host.Port)
-		ch <- host
 		conn.Close()
+		ch <- host
 	}
 	<-target
 }
