@@ -29,6 +29,8 @@ func Initialise(s *State, ports string, wordlist string, statusCodesIgn string, 
 		os.Exit(0)
 	}
 	s.Timeout = time.Duration(timeout) * time.Second
+	cl.Timeout = s.Timeout
+
 	s.URLProvided = false
 	if wordlist != "" {
 		pathData, err := GetDataFromFile(wordlist)
@@ -116,6 +118,7 @@ func Initialise(s *State, ports string, wordlist string, statusCodesIgn string, 
 
 // Start does the thing
 func Start(s State) {
+	// go TextOutput(&s)
 	os.Mkdir(path.Join(s.OutputDirectory), 0755) // drwxr-xr-x
 	if s.Scan {
 		fmt.Printf(LineSep())

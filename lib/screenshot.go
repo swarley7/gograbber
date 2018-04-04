@@ -95,7 +95,6 @@ func (target TargetHost) ScreenshotAURL(s *State, cnt int, host Host, path strin
 	if err := page.Open(url); err != nil {
 		fmt.Printf("Unable to open page: %v (%v)\n", url, err)
 		<-target
-
 		return err
 	}
 	// Setup the viewport and render the results view.

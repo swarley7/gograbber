@@ -9,25 +9,21 @@ import (
 )
 
 // ScanHosts performs a TCP Portscan of hosts. Currently uses complete handshake. May look into SYN scan later.
-func ScanHosts(s *State) (h []Host) {
-	ch := make(chan Host, s.Threads)
+func ScanHosts(s *State, targets chan Host) (ch chan Host) {
+	ch = make(chan Host)
 	var wg sync.WaitGroup
 	targetHost := make(TargetHost, s.Threads)
-	for id, urlComponent := range s.URLComponents {
+	// totalHosts := len(s.URLComponents)
+	var cnt int
+	for urlComponent := range targets {
 		wg.Add(1)
-		routineId := Counter{id}
+		routineId := Counter{cnt}
 		targetHost <- routineId
 		go targetHost.connectHost(s, urlComponent, ch, &wg)
+		cnt++
 	}
-
-	go func() {
-		for AliveHost := range ch {
-			h = append(h, AliveHost)
-		}
-	}()
 	wg.Wait()
-	close(ch)
-	return h
+	return ch
 }
 
 // connectHost does the actual TCP connection

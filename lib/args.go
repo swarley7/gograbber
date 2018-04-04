@@ -53,6 +53,7 @@ type State struct {
 	Scan                   bool
 	UserAgent              string
 	Username               string
+	OutputChan             chan string
 	Verbose                bool
 	Wordlist               string
 	OutputDirectory        string

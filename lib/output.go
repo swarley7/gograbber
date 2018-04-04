@@ -8,6 +8,8 @@ import (
 	"regexp"
 	"strings"
 	"time"
+
+	tm "github.com/buger/goterm"
 )
 
 func MarkdownReport(s *State) string {
@@ -35,7 +37,10 @@ func MarkdownReport(s *State) string {
 }
 
 func TextOutput(s *State) {
-
+	tm.Clear()
+	box := tm.NewBox(100|tm.PCT, 5, 1)
+	fmt.Fprint(box, "Some box content")
+	time.Sleep(5 * time.Second)
 }
 
 func JSONify(s *State) {

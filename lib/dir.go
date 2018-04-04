@@ -33,7 +33,6 @@ func prefetch(host Host, s *State) (h Host, err error) {
 		if s.Debug {
 			fmt.Printf("Prefetch URL: %v\n", url)
 		}
-		cl.Timeout = s.Timeout
 		resp, err := cl.Get(url)
 		// resp.Body.Close()
 		if err != nil {
@@ -59,7 +58,7 @@ func prefetch(host Host, s *State) (h Host, err error) {
 	return host, nil
 }
 
-func DirbustHosts(s *State) (h []Host) {
+func DirbustHosts(s *State) (h1 []Host) {
 	hostChan := make(chan Host)
 	// respChan := make(chan *http.Response, s.Threads)
 
@@ -87,7 +86,6 @@ func DirbustHosts(s *State) (h []Host) {
 		}
 		if s.Soft404Detection {
 			randURL := fmt.Sprintf("%v://%v:%v/%v", host.Protocol, host.HostAddr, host.Port, RandString(16))
-			cl.Timeout = s.Timeout
 			randResp, err := cl.Get(randURL)
 			if err != nil {
 				continue
@@ -111,16 +109,16 @@ func DirbustHosts(s *State) (h []Host) {
 		}
 	}
 
-	go func() {
+	wg.Wait()
+	func() {
 		for url := range hostChan {
-			h = append(h, url)
+			h1 = append(h1, url)
 		}
 	}()
-	wg.Wait()
 	close(hostChan)
 	// close(respChan)
 	// write resps to file? return hosts for now
-	return h
+	return h1
 }
 
 // func distributeHTTPRequests(s *State, host Host, hostChan chan<- Host, wg *sync.WaitGroup) {
@@ -180,7 +178,6 @@ func (target TargetHost) HTTPGetter(host Host, debug bool, jitter int, soft404De
 	// }
 	// client := &http.Client{
 	// 	Transport: tx}
-	cl.Timeout = timeout
 	resp, err := cl.Get(url)
 	if err != nil {
 		<-target
