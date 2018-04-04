@@ -159,6 +159,9 @@ func Start(s State) {
 			numProcs = x
 		}
 		procs := make([]phantomjs.Process, numProcs)
+		if s.Debug {
+			fmt.Printf("Creating [%v] PhantomJS processes... This could take a second\n", numProcs)
+		}
 		for i := 0; i < numProcs; i++ {
 			procs[i] = phantomjs.Process{BinPath: s.PhantomJSPath,
 				Port:   phantomjs.DefaultPort + i,
@@ -167,6 +170,7 @@ func Start(s State) {
 			if err := procs[i].Open(); err != nil {
 				panic(err)
 			}
+			fmt.Printf("-> Process: #[%v] created on localhost:%v\n", i, phantomjs.DefaultPort+i)
 			defer procs[i].Close()
 		}
 		s.PhantomProcesses = procs
