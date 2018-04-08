@@ -48,6 +48,7 @@ type State struct {
 	SingleURL              string
 	PhantomJSPath          string
 	URLComponents          []Host
+	Targets                chan Host
 	Paths                  StringSet
 	UseSlash               bool
 	Scan                   bool

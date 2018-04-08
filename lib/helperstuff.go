@@ -55,8 +55,8 @@ var tx = &http.Transport{
 
 var cl = http.Client{
 	Transport: tx,
-	Timeout:   time.Second * 5, //eyy no reasonable timeout on clients too!
 }
+var d = net.Dialer{}
 
 func Hosts(cidr string) ([]string, error) {
 	ip, ipnet, err := net.ParseCIDR(cidr)

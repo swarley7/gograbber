@@ -15,6 +15,7 @@ import (
 
 // Initialise sets up the program's state
 func Initialise(s *State, ports string, wordlist string, statusCodesIgn string, protocols string, timeout int, AdvancedUsage bool) (errors *multierror.Error) {
+	s.Targets = make(chan Host)
 	if AdvancedUsage {
 
 		var Usage = func() {
@@ -55,15 +56,16 @@ func Initialise(s *State, ports string, wordlist string, statusCodesIgn string, 
 				if err != nil {
 					continue
 				}
-				s.URLComponents = append(s.URLComponents, h)
+				s.Targets <- h
 			}
 		}
 		if s.SingleURL != "" {
 			h, err := ParseURLToHost(s.SingleURL)
 			if err == nil {
-				s.URLComponents = append(s.URLComponents, h)
+				s.Targets <- h
 			}
 		}
+		close(s.Targets)
 		s.Scan = false
 		return
 	}
@@ -117,6 +119,17 @@ func Initialise(s *State, ports string, wordlist string, statusCodesIgn string, 
 // Start does the thing
 func Start(s State) {
 	os.Mkdir(path.Join(s.OutputDirectory), 0755) // drwxr-xr-x
+	cl.Timeout = s.Timeout * time.Second
+	d.Timeout = s.Timeout * time.Second
+	ScanChan := make(chan Host, s.Threads)
+	DirbChan := make(chan Host, s.Threads)
+	ScreenshotChan := make(chan Host, s.Threads)
+	go func() {
+		for _, host := range s.URLComponents {
+			s.Targets <- host
+		}
+		close(s.Targets)
+	}()
 	if s.Scan {
 		fmt.Printf(LineSep())
 
@@ -125,9 +138,12 @@ func Start(s State) {
 			fmt.Printf("Testing %v host:port combinations\n", len(s.URLComponents))
 		}
 		fmt.Printf(LineSep())
-		s.URLComponents = ScanHosts(&s)
+
+		go ScanHosts(&s, s.Targets, ScanChan)
 
 		fmt.Printf(LineSep())
+	} else {
+		ScanChan = s.Targets
 	}
 	if s.Dirbust {
 		fmt.Printf("Starting Dirbuster\n")
@@ -142,11 +158,14 @@ func Start(s State) {
 		}
 		fmt.Printf(LineSep())
 
-		s.URLComponents = DirbustHosts(&s)
+		go DirbustHosts(&s, ScanChan, DirbChan)
 		if s.Debug {
 			fmt.Println(s.URLComponents)
 		}
 		fmt.Printf(LineSep())
+	} else {
+		s.Targets = ScanChan
+		DirbChan = s.Targets
 	}
 	if s.Screenshot {
 		fmt.Printf("Starting Screenshotter\n")
@@ -170,7 +189,7 @@ func Start(s State) {
 			if err := procs[i].Open(); err != nil {
 				panic(err)
 			}
-			fmt.Printf("-> Process: #[%v] created on localhost:%v\n", i, phantomjs.DefaultPort+i)
+			fmt.Printf("-> Process: #[%v] of [%v] created on localhost:%v\n", i, numProcs, phantomjs.DefaultPort+i)
 			defer procs[i].Close()
 		}
 		s.PhantomProcesses = procs
@@ -181,8 +200,11 @@ func Start(s State) {
 			fmt.Printf("Testing %v URLs\n", len(s.URLComponents)*len(s.Paths.Set))
 		}
 		fmt.Printf(LineSep())
-		s.URLComponents = Screenshot(&s)
+		go Screenshot(&s, DirbChan, ScreenshotChan)
 		fmt.Printf(LineSep())
+	} else {
+		s.Targets = DirbChan
+		ScreenshotChan = s.Targets
 	}
 	fmt.Printf("Starting Reporter\n")
 	if s.Debug {
@@ -191,7 +213,7 @@ func Start(s State) {
 	fmt.Printf(LineSep())
 	s.ReportDirectory = path.Join(s.OutputDirectory, "report")
 	os.Mkdir(s.ReportDirectory, 0755) // drwxr-xr-x
-	reportFile := MarkdownReport(&s)
+	reportFile := MarkdownReport(&s, ScreenshotChan)
 	fmt.Printf("Report written to: [%v]\n", reportFile)
 	fmt.Printf(LineSep())
 }

@@ -10,7 +10,7 @@ import (
 	"github.com/benbjohnson/phantomjs"
 )
 
-func Screenshot(s *State) (h []Host) {
+func Screenshot(s *State, targets chan Host, results chan Host) {
 	// for true {
 	// 	page, err := s.PhantomProcesses.CreateWebPage()
 	// 	if err != nil {
@@ -28,32 +28,20 @@ func Screenshot(s *State) (h []Host) {
 	// 	page.Close()
 	// 	break
 	// }
-	hostChan := make(chan Host, s.Threads)
-
 	wg := sync.WaitGroup{}
 	targetHost := make(TargetHost, s.Threads)
 	var cnt int
-	for _, host := range s.URLComponents {
+	for host := range targets {
 		// wg.Add(1)
 		// go distributeScreenshotWorkers(s, URLComponent, hostChan, respChan, &wg)
 		for path := range host.Paths.Set {
 			wg.Add(1) //MAKE SURE SCREENSHOTURL HAS A DONE CALL IN IT JFC
 			routineId := Counter{cnt}
 			targetHost <- routineId
-			go targetHost.ScreenshotAURL(s, cnt, host, path, hostChan, &wg)
+			go targetHost.ScreenshotAURL(s, cnt, host, path, results, &wg)
 			cnt++
 		}
 	}
-
-	go func() {
-		for url := range hostChan {
-			h = append(h, url)
-		}
-	}()
-	wg.Wait()
-	close(hostChan)
-	// write resps to file? return hosts for now
-	return h
 }
 
 // func distributeScreenshotWorkers(s *State, host Host, hostChan chan Host, respChan chan *http.Response, wg *sync.WaitGroup) {

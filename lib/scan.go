@@ -3,31 +3,22 @@ package lib
 import (
 	"fmt"
 	"math/rand"
-	"net"
 	"sync"
 	"time"
 )
 
 // ScanHosts performs a TCP Portscan of hosts. Currently uses complete handshake. May look into SYN scan later.
-func ScanHosts(s *State) (h []Host) {
-	ch := make(chan Host, s.Threads)
+func ScanHosts(s *State, targets chan Host, results chan Host) {
 	var wg sync.WaitGroup
 	targetHost := make(TargetHost, s.Threads)
-	for id, urlComponent := range s.URLComponents {
+	var cnt int
+	for urlComponent := range targets {
 		wg.Add(1)
-		routineId := Counter{id}
+		routineId := Counter{cnt}
 		targetHost <- routineId
-		go targetHost.connectHost(s, urlComponent, ch, &wg)
+		go targetHost.connectHost(s, urlComponent, results, &wg)
+		cnt++
 	}
-
-	go func() {
-		for AliveHost := range ch {
-			h = append(h, AliveHost)
-		}
-	}()
-	wg.Wait()
-	close(ch)
-	return h
 }
 
 // connectHost does the actual TCP connection
@@ -43,7 +34,6 @@ func (target TargetHost) connectHost(s *State, host Host, ch chan Host, wg *sync
 		}
 		time.Sleep(jitter)
 	}
-	d := net.Dialer{Timeout: s.Timeout}
 	conn, err := d.Dial("tcp", fmt.Sprintf("%v:%v", host.HostAddr, host.Port))
 	if err == nil {
 		fmt.Printf("%v:%v OPEN\n", host.HostAddr, host.Port)

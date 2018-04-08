@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-func MarkdownReport(s *State) string {
+func MarkdownReport(s *State, targets chan Host) string {
 	var report bytes.Buffer
 	currTime := strings.Replace(time.Now().Format(time.RFC3339), ":", "_", -1)
 	reportFile := path.Join(s.ReportDirectory, fmt.Sprintf("%v_Report.md", currTime))
@@ -20,7 +20,7 @@ func MarkdownReport(s *State) string {
 	}
 	// Header
 	report.WriteString(fmt.Sprintf("# Gograbber report - %v (%v)\n", s.ProjectName, currTime))
-	for _, URLComponent := range s.URLComponents {
+	for URLComponent := range targets {
 		var path string
 		for a := range URLComponent.Paths.Set {
 			path = a
