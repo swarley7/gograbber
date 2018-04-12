@@ -23,6 +23,8 @@ type State struct {
 	Ratio                  float64
 	Soft404Detection       bool
 	Soft404Method          int
+	PrefetchedHosts        map[string]bool
+	Soft404edHosts         map[string]bool
 	NoStatus               bool
 	Hosts                  StringSet
 	InputFile              string

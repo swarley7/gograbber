@@ -146,3 +146,41 @@ func taskWorker(lolgroup *sync.WaitGroup, indexChan chan string, configChan chan
 		}
 	}
 }
+
+func RoutineManager(s *State, ScanChan chan Host, DirbustChan chan Host, ScreenshotChan chan Host, wg *sync.WaitGroup) {
+	defer wg.Done()
+	targetHost := make(TargetHost, s.Threads)
+	for {
+		select {
+		case host := <-s.Targets:
+			if !s.Scan {
+				// We're not supposed to scan, so let's pump it into the output chan!
+				ScanChan <- host
+				break
+			}
+			go targetHost.ConnectHost(s, host, ScanChan)
+		case host := <-ScanChan:
+			// Do dirbusting
+			if !s.Dirbust {
+				// We're not supposed to dirbust, so let's pump it into the output chan!
+				DirbustChan <- host
+				break
+			}
+			for path, _ := range s.Paths.Set {
+				go targetHost.DirbustHost(s, host, path, DirbustChan)
+			}
+		case host := <-DirbustChan:
+			// Do Screenshotting
+			if !s.Screenshot {
+				// We're not supposed to screenshot, so let's pump it into the output chan!
+				ScreenshotChan <- host
+				break
+			}
+			go targetHost.ScreenshotHost(s, host, ScreenshotChan)
+		}
+		if s.Targets == nil && ScanChan == nil && DirbustChan == nil {
+			return
+		}
+	}
+
+}

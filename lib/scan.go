@@ -3,27 +3,39 @@ package lib
 import (
 	"fmt"
 	"math/rand"
-	"sync"
 	"time"
 )
 
-// ScanHosts performs a TCP Portscan of hosts. Currently uses complete handshake. May look into SYN scan later.
-func ScanHosts(s *State, targets chan Host, results chan Host) {
-	var wg sync.WaitGroup
-	targetHost := make(TargetHost, s.Threads)
-	var cnt int
-	for urlComponent := range targets {
-		wg.Add(1)
-		routineId := Counter{cnt}
-		targetHost <- routineId
-		go targetHost.connectHost(s, urlComponent, results, &wg)
-		cnt++
-	}
-}
+// var finished = false
+
+// // ScanHosts performs a TCP Portscan of hosts. Currently uses complete handshake. May look into SYN scan later.
+// func ScanHosts(s *State, targets chan Host, results chan Host, wgExt *sync.WaitGroup) {
+// 	// defer close(results)
+// 	defer wgExt.Done()
+// 	var wg sync.WaitGroup
+// 	targetHost := make(TargetHost, s.Threads)
+// 	var cnt int
+// 	for {
+// 		select {
+// 		case urlComponent := <-targets:
+// 			{
+// 				wg.Add(1)
+// 				routineId := Counter{cnt}
+// 				targetHost <- routineId
+// 				go targetHost.ConnectHost(s, urlComponent, results)
+// 				cnt++
+// 			}
+// 		}
+// 	}
+// 	wg.Wait()
+
+// }
 
 // connectHost does the actual TCP connection
-func (target TargetHost) connectHost(s *State, host Host, ch chan Host, wg *sync.WaitGroup) {
-	defer wg.Done()
+func (target TargetHost) ConnectHost(s *State, host Host, results chan Host) {
+	defer func() {
+		<-target
+	}()
 	if s.Debug {
 		fmt.Printf("Port scanning: %v:%v\n", host.HostAddr, host.Port)
 	}
@@ -38,7 +50,6 @@ func (target TargetHost) connectHost(s *State, host Host, ch chan Host, wg *sync
 	if err == nil {
 		fmt.Printf("%v:%v OPEN\n", host.HostAddr, host.Port)
 		conn.Close()
-		ch <- host
+		results <- host
 	}
-	<-target
 }

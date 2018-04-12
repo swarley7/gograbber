@@ -10,62 +10,53 @@ import (
 	"github.com/benbjohnson/phantomjs"
 )
 
-func Screenshot(s *State, targets chan Host, results chan Host) {
-	// for true {
-	// 	page, err := s.PhantomProcesses.CreateWebPage()
-	// 	if err != nil {
-	// 		fmt.Println(err)
-	// 		time.Sleep(time.Second)
-	// 		page.Close()
-	// 		continue
-	// 	}
-	// 	if err := page.Open("http://localhost:20202/"); err != nil {
-	// 		fmt.Println(err)
-	// 		time.Sleep(time.Second)
-	// 		page.Close()
-	// 		continue
-	// 	}
-	// 	page.Close()
-	// 	break
-	// }
-	wg := sync.WaitGroup{}
-	targetHost := make(TargetHost, s.Threads)
-	var cnt int
-	for host := range targets {
-		// wg.Add(1)
-		// go distributeScreenshotWorkers(s, URLComponent, hostChan, respChan, &wg)
-		for path := range host.Paths.Set {
-			wg.Add(1) //MAKE SURE SCREENSHOTURL HAS A DONE CALL IN IT JFC
-			routineId := Counter{cnt}
-			targetHost <- routineId
-			go targetHost.ScreenshotAURL(s, cnt, host, path, results, &wg)
-			cnt++
-		}
-	}
-}
-
-// func distributeScreenshotWorkers(s *State, host Host, hostChan chan Host, respChan chan *http.Response, wg *sync.WaitGroup) {
-// 	//wg.Add called before this, so we FUCKING DEFER DONE IT
-// 	defer wg.Done()
-// 	for path := range host.Paths.Set {
-// 		wg.Add(1) //MAKE SURE SCREENSHOTURL HAS A DONE CALL IN IT JFC
-// 		go ScreenshotAURL(s, host, path, hostChan, respChan, wg)
+// func Screenshot(s *State, targets chan Host, results chan Host, wgExt *sync.WaitGroup) {
+// 	// defer close(results)
+// 	defer wgExt.Done()
+// 	wg := sync.WaitGroup{}
+// 	targetHost := make(TargetHost, s.Threads)
+// 	var cnt int
+// 	for {
+// 		select {
+// 		case host := <-targets:
+// 			{
+// 				for path := range host.Paths.Set {
+// 					wg.Add(1) //MAKE SURE SCREENSHOTURL HAS A DONE CALL IN IT JFC
+// 					routineId := Counter{cnt}
+// 					targetHost <- routineId
+// 					fmt.Printf("Screenshotting: [%v]\n", cnt)
+// 					go targetHost.ScreenshotAURL(s, cnt, host, path, results, &wg)
+// 					cnt++
+// 				}
+// 			}
+// 		} // wg.Add(1)
+// 		// go distributeScreenshotWorkers(s, URLComponent, hostChan, respChan, &wg)
 // 	}
+// 	wg.Wait()
 // }
 
+func (target TargetHost) ScreenshotHost(s *State, host Host, results chan Host) {
+	// defer close(results)
+	wg := sync.WaitGroup{}
+	// targetHost := make(TargetHost, s.Threads)
+	// var cnt int
+	wg.Wait()
+}
+
 func (target TargetHost) ScreenshotAURL(s *State, cnt int, host Host, path string, hostChan chan Host, wg *sync.WaitGroup) (err error) {
-	defer wg.Done()
+	defer func() {
+		<-target
+		wg.Done()
+	}()
 	page, err := s.PhantomProcesses[cnt%len(s.PhantomProcesses)].CreateWebPage()
-	page.SetSettings(phantomjs.WebPageSettings{ResourceTimeout: s.Timeout}) // Time out the page if it takes too long to load. Sometimes JS is fucky and takes wicked long to do nothing forever :(
 	url := fmt.Sprintf("%v://%v:%v/%v", host.Protocol, host.HostAddr, host.Port, path)
 
 	if err != nil {
 		fmt.Printf("Unable to Create webpage: %v (%v)\n", url, err)
-		<-target
-
 		return err
 	}
 	defer page.Close()
+	page.SetSettings(phantomjs.WebPageSettings{ResourceTimeout: s.Timeout}) // Time out the page if it takes too long to load. Sometimes JS is fucky and takes wicked long to do nothing forever :(
 
 	if strings.HasPrefix(path, "/") {
 		path = path[1:] // strip preceding '/' char
@@ -82,15 +73,12 @@ func (target TargetHost) ScreenshotAURL(s *State, cnt int, host Host, path strin
 	}
 	if err := page.Open(url); err != nil {
 		fmt.Printf("Unable to open page: %v (%v)\n", url, err)
-		<-target
-
 		return err
 	}
 	// Setup the viewport and render the results view.
 	if err := page.SetViewportSize(s.ImgX, s.ImgY); err != nil {
 		fmt.Printf("Unable to set Viewport size: %v (%v)\n", url, err)
 		<-target
-
 		return err
 	}
 	currTime := strings.Replace(time.Now().Format(time.RFC3339), ":", "_", -1)
@@ -103,12 +91,9 @@ func (target TargetHost) ScreenshotAURL(s *State, cnt int, host Host, path strin
 	fmt.Println(screenshotFilename)
 	if err := page.Render(screenshotFilename, "png", s.ScreenshotQuality); err != nil {
 		fmt.Printf("Unable to save Screenshot: %v (%v)\n", url, err)
-		<-target
-
 		return err
 	}
 	host.ScreenshotFilename = screenshotFilename
 	hostChan <- host
-	<-target
-	return
+	return err
 }
