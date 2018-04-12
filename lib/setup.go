@@ -54,18 +54,12 @@ func Initialise(s *State, ports string, wordlist string, statusCodesIgn string, 
 
 			for _, item := range inputData {
 				// s.URLComponents
-				h, err := ParseURLToHost(item)
-				if err != nil {
-					continue
-				}
-				s.Targets <- h
+				ParseURLToHost(item, s.Targets)
+
 			}
 		}
 		if s.SingleURL != "" {
-			h, err := ParseURLToHost(s.SingleURL)
-			if err == nil {
-				s.Targets <- h
-			}
+			ParseURLToHost(s.SingleURL, s.Targets)
 		}
 		// close(s.Targets)
 		s.Scan = false
@@ -109,7 +103,7 @@ func Initialise(s *State, ports string, wordlist string, statusCodesIgn string, 
 	for _, p := range strings.Split(protocols, ",") {
 		s.Protocols.Add(p)
 	}
-	s.URLComponents = GenerateURLs(s.Hosts, s.Ports, &s.Paths)
+	go GenerateURLs(s.Hosts, s.Ports, &s.Paths, s.Targets)
 	// fmt.Println(s)
 	if !s.Dirbust && !s.Scan && !s.Screenshot && !s.URLProvided {
 		flag.Usage()

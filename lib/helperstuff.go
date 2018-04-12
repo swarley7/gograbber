@@ -270,18 +270,16 @@ func ChunkString(s string, chunkSize int) []string {
 	return chunks
 }
 
-func GenerateURLs(targetList StringSet, Ports IntSet, Paths *StringSet) (HostStructs []Host) {
+func GenerateURLs(targetList StringSet, Ports IntSet, Paths *StringSet, targets chan Host) (HostStructs []Host) {
 	for target, _ := range targetList.Set {
 		for port, _ := range Ports.Set {
-			for path, _ := range Paths.Set {
-				HostStructs = append(HostStructs, Host{Port: port, HostAddr: target, Path: path})
-			}
+			targets <- Host{Port: port, HostAddr: target}
 		}
 	}
 	return HostStructs
 }
 
-func ParseURLToHost(URL string) (host Host, err error) {
+func ParseURLToHost(URL string, targets chan Host) {
 	URLObj, err := url.ParseRequestURI(URL)
 	if err != nil {
 		// URL isn't valid
@@ -292,9 +290,9 @@ func ParseURLToHost(URL string) (host Host, err error) {
 	if port != "" {
 		Port, err = strconv.Atoi(port)
 	} else {
-		if URLObj.Scheme == strings.ToLower("http") {
+		if strings.ToLower(URLObj.Scheme) == "http" {
 			Port = 80
-		} else if URLObj.Scheme == strings.ToLower("https") {
+		} else if strings.ToLower(URLObj.Scheme) == "https" {
 			Port = 443
 		} else {
 			fmt.Println(URLObj.Scheme)
@@ -302,7 +300,7 @@ func ParseURLToHost(URL string) (host Host, err error) {
 		}
 	}
 	path := URLObj.RawQuery
-	return Host{HostAddr: URLObj.Hostname(), Path: path, Protocol: URLObj.Scheme, Port: Port}, err
+	targets <- Host{HostAddr: URLObj.Hostname(), Path: path, Protocol: URLObj.Scheme, Port: Port}
 }
 
 func makeRange(min, max int) []int {
