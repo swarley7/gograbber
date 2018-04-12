@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"strings"
@@ -150,6 +151,7 @@ func taskWorker(lolgroup *sync.WaitGroup, indexChan chan string, configChan chan
 func RoutineManager(s *State, ScanChan chan Host, DirbustChan chan Host, ScreenshotChan chan Host, wg *sync.WaitGroup) {
 	defer wg.Done()
 	targetHost := make(TargetHost, s.Threads)
+	var err error
 	for {
 		select {
 		case host := <-s.Targets:
@@ -160,14 +162,49 @@ func RoutineManager(s *State, ScanChan chan Host, DirbustChan chan Host, Screens
 			}
 			go targetHost.ConnectHost(s, host, ScanChan)
 		case host := <-ScanChan:
+			var fuggoff bool
 			// Do dirbusting
 			if !s.Dirbust {
 				// We're not supposed to dirbust, so let's pump it into the output chan!
 				DirbustChan <- host
 				break
 			}
-			for path, _ := range s.Paths.Set {
-				go targetHost.DirbustHost(s, host, path, DirbustChan)
+			if !s.URLProvided && !host.PrefetchDoneCheck(s.PrefetchedHosts) {
+				host, err = Prefetch(host, s)
+				if err != nil {
+					fuggoff = true
+				}
+				if host.Protocol == "" {
+					fuggoff = true
+				}
+				s.PrefetchedHosts[host.PrefetchHash()] = true
+			}
+			if s.Soft404Detection && !host.Soft404DoneCheck(s.Soft404edHosts) {
+				randURL := fmt.Sprintf("%v://%v:%v/%v", host.Protocol, host.HostAddr, host.Port, RandString(16))
+				fmt.Printf("Soft404 checking [%v]\n", randURL)
+				randResp, err := cl.Get(randURL)
+				if err != nil {
+					fuggoff = true
+					break
+					// panic(err)
+				}
+				data, err := ioutil.ReadAll(randResp.Body)
+				if err != nil {
+					// panic(err)
+					fuggoff = true
+					break
+				}
+				randResp.Body.Close()
+				host.Soft404RandomURL = randURL
+				host.Soft404RandomPageContents = strings.Split(string(data), " ")
+				s.Soft404edHosts[host.Soft404Hash()] = true
+			}
+			if !fuggoff {
+				for path, _ := range s.Paths.Set {
+					// fmt.Printf("HTTP GET to [%v://%v:%v/%v]\n", host.Protocol, host.HostAddr, host.Port, host.Path)
+					go targetHost.HTTPGetter(host, s.Debug, s.Jitter, s.Soft404Detection, s.StatusCodesIgn, s.Ratio, path, DirbustChan)
+				}
+
 			}
 		case host := <-DirbustChan:
 			// Do Screenshotting

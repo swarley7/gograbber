@@ -109,6 +109,7 @@ func Initialise(s *State, ports string, wordlist string, statusCodesIgn string, 
 		flag.Usage()
 		os.Exit(1)
 	}
+	// close(s.Targets)
 	return
 }
 

@@ -112,46 +112,49 @@ func Prefetch(host Host, s *State) (h Host, err error) {
 // 	wg.Wait()
 // }
 
-func (target TargetHost) DirbustHost(s *State, host Host, path string, results chan Host) {
+// func (target TargetHost) DirbustHost(s *State, host Host, path string, results chan Host) {
+// 	defer func() {
+// 		<-target
+// 	}()
+// 	var fuggoff bool = false
+// 	if !s.URLProvided && !host.PrefetchDoneCheck(s.PrefetchedHosts) {
+// 		host, err := Prefetch(host, s)
+// 		if err != nil {
+// 			fuggoff = true
+// 		}
+// 		if host.Protocol == "" {
+// 			fuggoff = true
+// 		}
+// 		s.PrefetchedHosts[host.PrefetchHash()] = true
+// 	}
+// 	if s.Soft404Detection && !host.Soft404DoneCheck(s.Soft404edHosts) {
+// 		randURL := fmt.Sprintf("%v://%v:%v/%v", host.Protocol, host.HostAddr, host.Port, RandString(16))
+// 		randResp, err := cl.Get(randURL)
+// 		if err != nil {
+// 			fuggoff = true
+// 			// panic(err)
+// 		}
+// 		data, err := ioutil.ReadAll(randResp.Body)
+// 		if err != nil {
+// 			// panic(err)
+// 			fuggoff = true
+// 		}
+// 		randResp.Body.Close()
+// 		host.Soft404RandomURL = randURL
+// 		host.Soft404RandomPageContents = strings.Split(string(data), " ")
+// 		s.Soft404edHosts[host.Soft404Hash()] = true
+// 	}
+// 	if !fuggoff {
+// 		HTTPGetter(host, s.Debug, s.Jitter, s.Soft404Detection, s.StatusCodesIgn, s.Ratio, path, results)
+// 	}
+// 	return
+// }
+
+func (target TargetHost) HTTPGetter(host Host, debug bool, jitter int, soft404Detection bool, statusCodesIgn IntSet, Ratio float64, path string, hostChan chan Host) {
+	// debug
 	defer func() {
 		<-target
 	}()
-	var fuggoff bool = false
-	if !s.URLProvided && !host.PrefetchDoneCheck(s.PrefetchedHosts) {
-		host, err := Prefetch(host, s)
-		if err != nil {
-			fuggoff = true
-		}
-		if host.Protocol == "" {
-			fuggoff = true
-		}
-		s.PrefetchedHosts[host.PrefetchHash()] = true
-	}
-	if s.Soft404Detection && !host.Soft404DoneCheck(s.Soft404edHosts) {
-		randURL := fmt.Sprintf("%v://%v:%v/%v", host.Protocol, host.HostAddr, host.Port, RandString(16))
-		randResp, err := cl.Get(randURL)
-		if err != nil {
-			fuggoff = true
-			// panic(err)
-		}
-		data, err := ioutil.ReadAll(randResp.Body)
-		if err != nil {
-			// panic(err)
-			fuggoff = true
-		}
-		randResp.Body.Close()
-		host.Soft404RandomURL = randURL
-		host.Soft404RandomPageContents = strings.Split(string(data), " ")
-		s.Soft404edHosts[host.Soft404Hash()] = true
-	}
-	if !fuggoff {
-		HTTPGetter(host, s.Debug, s.Jitter, s.Soft404Detection, s.StatusCodesIgn, s.Ratio, path, results)
-	}
-	return
-}
-
-func HTTPGetter(host Host, debug bool, jitter int, soft404Detection bool, statusCodesIgn IntSet, Ratio float64, path string, hostChan chan Host) {
-	// debug
 	if strings.HasPrefix(path, "/") && len(path) > 0 {
 		path = path[1:] // strip preceding '/' char
 	}
