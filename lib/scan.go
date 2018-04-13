@@ -3,45 +3,22 @@ package lib
 import (
 	"fmt"
 	"math/rand"
+	"sync"
 	"time"
 )
 
-// var finished = false
-
-// // ScanHosts performs a TCP Portscan of hosts. Currently uses complete handshake. May look into SYN scan later.
-// func ScanHosts(s *State, targets chan Host, results chan Host, wgExt *sync.WaitGroup) {
-// 	// defer close(results)
-// 	defer wgExt.Done()
-// 	var wg sync.WaitGroup
-// 	targetHost := make(TargetHost, s.Threads)
-// 	var cnt int
-// 	for {
-// 		select {
-// 		case urlComponent := <-targets:
-// 			{
-// 				wg.Add(1)
-// 				routineId := Counter{cnt}
-// 				targetHost <- routineId
-// 				go targetHost.ConnectHost(s, urlComponent, results)
-// 				cnt++
-// 			}
-// 		}
-// 	}
-// 	wg.Wait()
-
-// }
-
 // connectHost does the actual TCP connection
-func (target TargetHost) ConnectHost(s *State, host Host, results chan Host) {
+func (target TargetHost) ConnectHost(wg *sync.WaitGroup, Jitter int, Debug bool, host Host, results chan Host) {
 	defer func() {
 		<-target
+		wg.Done()
 	}()
-	if s.Debug {
+	if Debug {
 		fmt.Printf("Port scanning: %v:%v\n", host.HostAddr, host.Port)
 	}
-	if s.Jitter > 0 {
-		jitter := time.Duration(rand.Intn(s.Jitter)) * time.Millisecond
-		if s.Debug {
+	if Jitter > 0 {
+		jitter := time.Duration(rand.Intn(Jitter)) * time.Millisecond
+		if Debug {
 			fmt.Printf("Jitter: %v\n", jitter)
 		}
 		time.Sleep(jitter)

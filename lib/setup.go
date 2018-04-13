@@ -10,12 +10,14 @@ import (
 	"sync"
 	"time"
 
+	"github.com/benbjohnson/phantomjs"
 	multierror "github.com/hashicorp/go-multierror"
 )
 
 // Initialise sets up the program's state
 func Initialise(s *State, ports string, wordlist string, statusCodesIgn string, protocols string, timeout int, AdvancedUsage bool) (errors *multierror.Error) {
 	s.Targets = make(chan Host, s.Threads)
+
 	if AdvancedUsage {
 
 		var Usage = func() {
@@ -74,9 +76,7 @@ func Initialise(s *State, ports string, wordlist string, statusCodesIgn string, 
 			}
 			s.Ports.Add(port)
 		}
-		// for p, _ := range s.Ports.Set {
-		// 	fmt.Printf("%v\n", p)
-		// }
+
 	}
 	if s.InputFile != "" {
 		inputData, err := GetDataFromFile(s.InputFile)
@@ -121,98 +121,35 @@ func Start(s State) {
 	ScanChan := make(chan Host, s.Threads)
 	DirbChan := make(chan Host, s.Threads)
 	ScreenshotChan := make(chan Host, s.Threads)
+	if s.Screenshot {
+		var numProcs int = 3
+		procs := make([]phantomjs.Process, numProcs)
+		if s.Debug {
+			fmt.Printf("Creating [%v] PhantomJS processes... This could take a second\n", numProcs)
+		}
+		for i := 0; i < numProcs; i++ {
+			procs[i] = phantomjs.Process{BinPath: s.PhantomJSPath,
+				Port:   phantomjs.DefaultPort + i,
+				Stdout: os.Stdout,
+				Stderr: os.Stderr}
+			if err := procs[i].Open(); err != nil {
+				panic(err)
+			}
+			fmt.Printf("-> Process: #[%v] of [%v] created on localhost:%v\n", i, numProcs, phantomjs.DefaultPort+i)
+			defer procs[i].Close()
+		}
+		s.PhantomProcesses = procs
+		s.ScreenshotDirectory = path.Join(s.OutputDirectory, "screenshots")
+		os.Mkdir(s.ScreenshotDirectory, 0755) // drwxr-xr-x
+		if s.Debug {
+			fmt.Printf("Testing %v URLs\n", len(s.URLComponents)*len(s.Paths.Set))
+		}
+	}
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	go RoutineManager(&s, ScanChan, DirbChan, ScreenshotChan, &wg)
 	wg.Wait()
-	// go func() {
-	// 	for _, host := range s.URLComponents {
-	// 		s.Targets <- host
-	// 	}
-	// 	close(s.Targets)
-	// }()
-	// if s.Scan {
-	// 	fmt.Printf(LineSep())
 
-	// 	fmt.Printf("Starting Port Scanner\n")
-	// 	if s.Debug {
-	// 		fmt.Printf("Testing %v host:port combinations\n", len(s.URLComponents))
-	// 	}
-	// 	fmt.Printf(LineSep())
-	// 	wg.Add(1)
-	// 	go ScanHosts(&s, s.Targets, ScanChan, &wg)
-
-	// 	fmt.Printf(LineSep())
-	// } else {
-	// 	ScanChan = s.Targets
-	// }
-	// if s.Dirbust {
-	// 	fmt.Printf("Starting Dirbuster\n")
-	// 	// if s.Debug {
-	// 	// 	var numURLs int
-	// 	// 	if len(s.Paths.Set) != 0 {
-	// 	// 		numURLs = len(s.URLComponents) * len(s.Paths.Set)
-	// 	// 	} else {
-	// 	// 		numURLs = len(s.URLComponents)
-	// 	// 	}
-	// 	// 	fmt.Printf("Testing %v URLs\n", numURLs)
-	// 	// }
-	// 	fmt.Printf(LineSep())
-	// 	wg.Add(1)
-	// 	go DirbustHosts(&s, ScanChan, DirbChan, &wg)
-	// 	if s.Debug {
-	// 		fmt.Println(s.URLComponents)
-	// 	}
-	// 	fmt.Printf(LineSep())
-	// } else {
-	// 	s.Targets = ScanChan
-	// 	DirbChan = s.Targets
-	// }
-	// if s.Screenshot {
-	// 	fmt.Printf("Starting Screenshotter\n")
-	// 	// Allocate phantom processes sensibly
-	// 	numTargets := (len(s.URLComponents) * len(s.Paths.Set)) / 10
-	// 	var numProcs = 10
-	// 	if numTargets <= 10 {
-	// 		numProcs = 1
-	// 	} else if x := s.Threads / 10; numTargets > x {
-	// 		numProcs = x
-	// 	}
-	// 	procs := make([]phantomjs.Process, numProcs)
-	// 	if s.Debug {
-	// 		fmt.Printf("Creating [%v] PhantomJS processes... This could take a second\n", numProcs)
-	// 	}
-	// 	for i := 0; i < numProcs; i++ {
-	// 		procs[i] = phantomjs.Process{BinPath: s.PhantomJSPath,
-	// 			Port:   phantomjs.DefaultPort + i,
-	// 			Stdout: os.Stdout,
-	// 			Stderr: os.Stderr}
-	// 		if err := procs[i].Open(); err != nil {
-	// 			panic(err)
-	// 		}
-	// 		fmt.Printf("-> Process: #[%v] of [%v] created on localhost:%v\n", i, numProcs, phantomjs.DefaultPort+i)
-	// 		defer procs[i].Close()
-	// 	}
-	// 	s.PhantomProcesses = procs
-
-	// 	s.ScreenshotDirectory = path.Join(s.OutputDirectory, "screenshots")
-	// 	os.Mkdir(s.ScreenshotDirectory, 0755) // drwxr-xr-x
-	// 	if s.Debug {
-	// 		fmt.Printf("Testing %v URLs\n", len(s.URLComponents)*len(s.Paths.Set))
-	// 	}
-	// 	fmt.Printf(LineSep())
-	// 	wg.Add(1)
-	// 	go Screenshot(&s, DirbChan, ScreenshotChan, &wg)
-	// 	fmt.Printf(LineSep())
-	// } else {
-	// 	s.Targets = DirbChan
-	// 	ScreenshotChan = s.Targets
-	// }
-	// wg.Wait()
-	// fmt.Printf("Starting Reporter\n")
-	// if s.Debug {
-	// 	fmt.Printf("Reporting on %v URLs\n", len(s.URLComponents)*len(s.Paths.Set))
-	// }
 	fmt.Printf(LineSep())
 	s.ReportDirectory = path.Join(s.OutputDirectory, "report")
 	os.Mkdir(s.ReportDirectory, 0755) // drwxr-xr-x

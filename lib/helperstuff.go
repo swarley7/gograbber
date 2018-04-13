@@ -16,8 +16,7 @@ import (
 	"time"
 )
 
-type Counter struct{ id int }
-type TargetHost chan Counter
+type TargetHost chan struct{}
 
 // Shim type for "set" containing ints
 type IntSet struct {
@@ -270,13 +269,13 @@ func ChunkString(s string, chunkSize int) []string {
 	return chunks
 }
 
-func GenerateURLs(targetList StringSet, Ports IntSet, Paths *StringSet, targets chan Host) (HostStructs []Host) {
+func GenerateURLs(targetList StringSet, Ports IntSet, Paths *StringSet, targets chan Host) {
+	// defer close(targets)
 	for target, _ := range targetList.Set {
 		for port, _ := range Ports.Set {
 			targets <- Host{Port: port, HostAddr: target}
 		}
 	}
-	return HostStructs
 }
 
 func ParseURLToHost(URL string, targets chan Host) {
