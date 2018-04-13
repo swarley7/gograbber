@@ -270,7 +270,7 @@ func ChunkString(s string, chunkSize int) []string {
 }
 
 func GenerateURLs(targetList StringSet, Ports IntSet, Paths *StringSet, targets chan Host) {
-	// defer close(targets)
+	defer close(targets)
 	for target, _ := range targetList.Set {
 		for port, _ := range Ports.Set {
 			targets <- Host{Port: port, HostAddr: target}

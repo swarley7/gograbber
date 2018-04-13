@@ -63,9 +63,9 @@ func RoutineManager(s *State, ScanChan chan Host, DirbustChan chan Host, Screens
 						wg.Wait()
 						close(ScanChan)
 					}()
+					firstRunS = false
 				}
 			} else {
-				fmt.Printf("lol scan done\n")
 				doneScan = true
 			}
 
@@ -126,6 +126,8 @@ func RoutineManager(s *State, ScanChan chan Host, DirbustChan chan Host, Screens
 							wg.Wait()
 							close(DirbustChan)
 						}()
+						firstRunD = false
+
 					}
 				}
 			} else {
@@ -150,6 +152,7 @@ func RoutineManager(s *State, ScanChan chan Host, DirbustChan chan Host, Screens
 						wg.Wait()
 						close(ScreenshotChan)
 					}()
+					firstRunSS = false
 				}
 			} else {
 				fmt.Printf("lol screenshot done\n")
