@@ -53,10 +53,9 @@ func Prefetch(host Host, s *State) (h Host, err error) {
 	return host, nil
 }
 
-func (target TargetHost) HTTPGetter(wg *sync.WaitGroup, host Host, debug bool, jitter int, soft404Detection bool, statusCodesIgn IntSet, Ratio float64, path string, results chan Host) {
-	// debug
+func HTTPGetter(wg *sync.WaitGroup, host Host, debug bool, jitter int, soft404Detection bool, statusCodesIgn IntSet, Ratio float64, path string, results chan Host, threads chan struct{}) {
 	defer func() {
-		<-target
+		<-threads
 		wg.Done()
 	}()
 	if strings.HasPrefix(path, "/") && len(path) > 0 {

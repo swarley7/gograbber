@@ -16,7 +16,7 @@ import (
 
 // Initialise sets up the program's state
 func Initialise(s *State, ports string, wordlist string, statusCodesIgn string, protocols string, timeout int, AdvancedUsage bool) (errors *multierror.Error) {
-	s.Targets = make(chan Host, s.Threads)
+	s.Targets = make(chan Host)
 
 	if AdvancedUsage {
 
@@ -117,10 +117,12 @@ func Initialise(s *State, ports string, wordlist string, statusCodesIgn string, 
 func Start(s State) {
 	os.Mkdir(path.Join(s.OutputDirectory), 0755) // drwxr-xr-x
 	cl.Timeout = s.Timeout * time.Second
-	d.Timeout = s.Timeout * time.Second
-	ScanChan := make(chan Host, s.Threads)
-	DirbChan := make(chan Host, s.Threads)
-	ScreenshotChan := make(chan Host, s.Threads)
+	// d.Timeout = 1 * time.Second
+	// d.DisableKeepAlives()
+
+	ScanChan := make(chan Host)
+	DirbChan := make(chan Host)
+	ScreenshotChan := make(chan Host)
 	if s.Screenshot {
 		var numProcs int = 3
 		procs := make([]phantomjs.Process, numProcs)
@@ -148,12 +150,12 @@ func Start(s State) {
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	go RoutineManager(&s, ScanChan, DirbChan, ScreenshotChan, &wg)
-	wg.Wait()
 
-	fmt.Printf(LineSep())
 	s.ReportDirectory = path.Join(s.OutputDirectory, "report")
 	os.Mkdir(s.ReportDirectory, 0755) // drwxr-xr-x
 	reportFile := MarkdownReport(&s, ScreenshotChan)
+	wg.Wait()
+
 	fmt.Printf("Report written to: [%v]\n", reportFile)
 	fmt.Printf(LineSep())
 }

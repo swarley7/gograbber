@@ -10,9 +10,10 @@ import (
 	"github.com/benbjohnson/phantomjs"
 )
 
-func (target TargetHost) ScreenshotAURL(wg *sync.WaitGroup, s *State, cnt int, host Host, results chan Host) (err error) {
+func ScreenshotAURL(wg *sync.WaitGroup, s *State, cnt int, host Host, results chan Host, threads chan struct{}) (err error) {
 	defer func() {
-		<-target
+		<-threads
+
 		wg.Done()
 	}()
 	page, err := s.PhantomProcesses[cnt%len(s.PhantomProcesses)].CreateWebPage()
@@ -45,7 +46,7 @@ func (target TargetHost) ScreenshotAURL(wg *sync.WaitGroup, s *State, cnt int, h
 	// Setup the viewport and render the results view.
 	if err := page.SetViewportSize(s.ImgX, s.ImgY); err != nil {
 		fmt.Printf("Unable to set Viewport size: %v (%v)\n", url, err)
-		<-target
+		// <-target
 		return err
 	}
 	currTime := strings.Replace(time.Now().Format(time.RFC3339), ":", "_", -1)

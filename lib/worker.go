@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"time"
 )
 
 // func statusUpdater() {
@@ -34,140 +35,146 @@ func writerWorker(writeChan chan []byte, filename string) {
 
 func RoutineManager(s *State, ScanChan chan Host, DirbustChan chan Host, ScreenshotChan chan Host, wg *sync.WaitGroup) {
 	defer wg.Done()
-	targetHost := make(TargetHost, s.Threads)
+	threadChan := make(chan struct{}, s.Threads)
 	var err error
 	var scanWg = sync.WaitGroup{}
 	var dirbWg = sync.WaitGroup{}
 	var screenshotWg = sync.WaitGroup{}
-	var firstRunS bool = true
-	var firstRunD bool = true
-	var firstRunSS bool = true
-	var doneScan bool = false
-	var doneDirbust bool = false
-	var doneScreenshot bool = false
+	// var firstRunS bool = true
+	// var firstRunD bool = true
+	// var firstRunSS bool = true
+	// var doneScan bool = false
+	// var doneDirbust bool = false
+	// var doneScreenshot bool = false
 
-	var cnt int
-	for {
-		select {
-		case host, ok := <-s.Targets:
-			if ok {
-				if !s.Scan {
-					// We're not supposed to scan, so let's pump it into the output chan!
-					ScanChan <- host
-					break
+	// var cnt int
+	ticker := time.NewTicker(10 * time.Second)
+	go func() {
+		for t := range ticker.C {
+			fmt.Println("Tick at", t)
+		}
+	}()
+	wg.Add(1)
+	go func() {
+		defer func() {
+			close(ScanChan)
+			wg.Done()
+		}()
+
+		if !s.Scan {
+			for host := range s.Targets {
+				ScanChan <- host
+			}
+			return
+		}
+		for host := range s.Targets {
+			scanWg.Add(1)
+			threadChan <- struct{}{}
+			go ConnectHost(&scanWg, s.Timeout*time.Second, s.Jitter, s.Debug, host, ScanChan, threadChan)
+		}
+		scanWg.Wait()
+		return
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer func() {
+			close(DirbustChan)
+			wg.Done()
+		}()
+
+		if !s.Dirbust {
+			for host := range ScanChan {
+				DirbustChan <- host
+			}
+			return
+		}
+		var fuggoff bool
+		// Do dirbusting
+		for host := range ScanChan {
+			fuggoff = false
+			if !s.URLProvided && !host.PrefetchDoneCheck(s.PrefetchedHosts) {
+				host, err = Prefetch(host, s)
+				if err != nil {
+					fuggoff = true
 				}
-				scanWg.Add(1)
-				go targetHost.ConnectHost(&scanWg, s.Jitter, s.Debug, host, ScanChan)
-				if firstRunS {
-					go func() {
-						wg.Wait()
-						close(ScanChan)
-					}()
-					firstRunS = false
+				if host.Protocol == "" {
+					fuggoff = true
+				}
+				s.PrefetchedHosts[host.PrefetchHash()] = true
+			}
+			if s.Soft404Detection && !host.Soft404DoneCheck(s.Soft404edHosts) {
+				randURL := fmt.Sprintf("%v://%v:%v/%v", host.Protocol, host.HostAddr, host.Port, RandString(16))
+				// fmt.Printf("Soft404 checking [%v]\n", randURL)
+				randResp, err := cl.Get(randURL)
+				if err != nil {
+					fuggoff = true
+					continue
+					// panic(err)
+				}
+				data, err := ioutil.ReadAll(randResp.Body)
+				if err != nil {
+					// panic(err)
+					fuggoff = true
+					continue
+				}
+				randResp.Body.Close()
+				host.Soft404RandomURL = randURL
+				host.Soft404RandomPageContents = strings.Split(string(data), " ")
+				s.Soft404edHosts[host.Soft404Hash()] = true
+			}
+			if fuggoff {
+				continue
+			}
+			if !s.URLProvided {
+				for path, _ := range s.Paths.Set {
+					// fmt.Printf("HTTP GET to [%v://%v:%v/%v]\n", host.Protocol, host.HostAddr, host.Port, host.Path)
+					threadChan <- struct{}{}
+					dirbWg.Add(1)
+					go HTTPGetter(&dirbWg, host, s.Debug, s.Jitter, s.Soft404Detection, s.StatusCodesIgn, s.Ratio, path, DirbustChan, threadChan)
 				}
 			} else {
-				doneScan = true
-			}
-
-		case host, ok := <-ScanChan:
-			if ok {
-				var fuggoff bool
-				// Do dirbusting
-				if !s.Dirbust {
-					// We're not supposed to dirbust, so let's pump it into the output chan!
-					DirbustChan <- host
-					break
-				}
-				if !s.URLProvided && !host.PrefetchDoneCheck(s.PrefetchedHosts) {
-					host, err = Prefetch(host, s)
-					if err != nil {
-						fuggoff = true
-					}
-					if host.Protocol == "" {
-						fuggoff = true
-					}
-					s.PrefetchedHosts[host.PrefetchHash()] = true
-				}
-				if s.Soft404Detection && !host.Soft404DoneCheck(s.Soft404edHosts) {
-					randURL := fmt.Sprintf("%v://%v:%v/%v", host.Protocol, host.HostAddr, host.Port, RandString(16))
-					// fmt.Printf("Soft404 checking [%v]\n", randURL)
-					randResp, err := cl.Get(randURL)
-					if err != nil {
-						fuggoff = true
-						break
-						// panic(err)
-					}
-					data, err := ioutil.ReadAll(randResp.Body)
-					if err != nil {
-						// panic(err)
-						fuggoff = true
-						break
-					}
-					randResp.Body.Close()
-					host.Soft404RandomURL = randURL
-					host.Soft404RandomPageContents = strings.Split(string(data), " ")
-					s.Soft404edHosts[host.Soft404Hash()] = true
-				}
-				if !fuggoff {
-					if !s.URLProvided {
-						for path, _ := range s.Paths.Set {
-							// fmt.Printf("HTTP GET to [%v://%v:%v/%v]\n", host.Protocol, host.HostAddr, host.Port, host.Path)
-							dirbWg.Add(1)
-
-							go targetHost.HTTPGetter(&dirbWg, host, s.Debug, s.Jitter, s.Soft404Detection, s.StatusCodesIgn, s.Ratio, path, DirbustChan)
-						}
-					} else {
-						dirbWg.Add(1)
-
-						go targetHost.HTTPGetter(&dirbWg, host, s.Debug, s.Jitter, s.Soft404Detection, s.StatusCodesIgn, s.Ratio, host.Path, DirbustChan)
-					}
-					if firstRunD {
-						go func() {
-							wg.Wait()
-							close(DirbustChan)
-						}()
-						firstRunD = false
-
-					}
-				}
-			} else {
-				fmt.Printf("lol dirb done\n")
-
-				doneDirbust = true
-			}
-		case host, ok := <-DirbustChan:
-			if ok {
-				// Do Screenshotting
-				if !s.Screenshot {
-					// We're not supposed to screenshot, so let's pump it into the output chan!
-					ScreenshotChan <- host
-					break
-				}
-				screenshotWg.Add(1)
-				go targetHost.ScreenshotAURL(&screenshotWg, s, cnt, host, ScreenshotChan)
-
-				cnt = cnt + 1
-				if firstRunSS {
-					go func() {
-						wg.Wait()
-						close(ScreenshotChan)
-					}()
-					firstRunSS = false
-				}
-			} else {
-				fmt.Printf("lol screenshot done\n")
-
-				doneScreenshot = true
-			}
-		case <-targetHost:
-			break
-		default:
-			if doneScan && doneDirbust && doneScreenshot {
-				fmt.Printf("lol %v hosts donereiszed\n", cnt)
-				return
+				threadChan <- struct{}{}
+				dirbWg.Add(1)
+				go HTTPGetter(&dirbWg, host, s.Debug, s.Jitter, s.Soft404Detection, s.StatusCodesIgn, s.Ratio, host.Path, DirbustChan, threadChan)
 			}
 		}
+		dirbWg.Wait()
+	}()
 
-	}
+	wg.Add(1)
+	go func() {
+		defer func() {
+			close(ScreenshotChan)
+			wg.Done()
+		}()
 
+		if !s.Screenshot {
+			for host := range DirbustChan {
+				ScreenshotChan <- host
+			}
+			return
+		}
+		var cnt int
+		for host := range DirbustChan {
+			threadChan <- struct{}{}
+			screenshotWg.Add(1)
+			go ScreenshotAURL(&screenshotWg, s, cnt, host, ScreenshotChan, threadChan)
+			cnt++
+		}
+		screenshotWg.Wait()
+		return
+	}()
+
+	// go func() {
+	// 	for {
+	// 		select {
+	// 		case <-targetHost:
+	// 			{
+	// 				continue
+	// 			}
+
+	// 		}
+	// 	}
+	// }()
 }

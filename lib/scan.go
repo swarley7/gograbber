@@ -3,14 +3,15 @@ package lib
 import (
 	"fmt"
 	"math/rand"
+	"net"
 	"sync"
 	"time"
 )
 
 // connectHost does the actual TCP connection
-func (target TargetHost) ConnectHost(wg *sync.WaitGroup, Jitter int, Debug bool, host Host, results chan Host) {
+func ConnectHost(wg *sync.WaitGroup, timeout time.Duration, Jitter int, Debug bool, host Host, results chan Host, threads chan struct{}) {
 	defer func() {
-		<-target
+		<-threads
 		wg.Done()
 	}()
 	if Debug {
@@ -23,7 +24,7 @@ func (target TargetHost) ConnectHost(wg *sync.WaitGroup, Jitter int, Debug bool,
 		}
 		time.Sleep(jitter)
 	}
-	conn, err := d.Dial("tcp", fmt.Sprintf("%v:%v", host.HostAddr, host.Port))
+	conn, err := net.DialTimeout("tcp", fmt.Sprintf("%v:%v", host.HostAddr, host.Port), timeout)
 	if err == nil {
 		fmt.Printf("%v:%v OPEN\n", host.HostAddr, host.Port)
 		conn.Close()
