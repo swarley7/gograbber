@@ -72,17 +72,21 @@ func HTTPGetter(wg *sync.WaitGroup, host Host, debug bool, jitter int, soft404De
 		}
 		time.Sleep(jitter)
 	}
-
-	resp, err := cl.Get(url)
+	var err error
+	host.HTTPReq, err = http.NewRequest("GET", url, nil)
 	if err != nil {
 		return
 	}
-	defer resp.Body.Close()
-	if statusCodesIgn.Contains(resp.StatusCode) {
+	host.HTTPResp, err = cl.Do(host.HTTPReq)
+	if err != nil {
+		return
+	}
+	defer host.HTTPResp.Body.Close()
+	if statusCodesIgn.Contains(host.HTTPResp.StatusCode) {
 		return
 	}
 	if soft404Detection && path != "" {
-		soft404Ratio := detectSoft404(resp, host.Soft404RandomPageContents)
+		soft404Ratio := detectSoft404(host.HTTPResp, host.Soft404RandomPageContents)
 		if soft404Ratio > Ratio {
 			if debug {
 				fmt.Printf("[%v] is very similar to [%v] (%.4f%% match)\n", url, host.Soft404RandomURL, (soft404Ratio * 100))
@@ -91,9 +95,7 @@ func HTTPGetter(wg *sync.WaitGroup, host Host, debug bool, jitter int, soft404De
 		}
 	}
 
-	fmt.Printf("%v - %v\n", url, resp.StatusCode)
-	// host.Protocols = StringSet{map[string]bool{}}
-	// host.Protocols.Add(protocol)
+	fmt.Printf("%v - %v\n", url, host.HTTPResp.StatusCode)
 	host.Path = path
 	results <- host
 }

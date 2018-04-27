@@ -6,14 +6,21 @@ import (
 	"os"
 	"path"
 	"regexp"
-	"strings"
 	"time"
 )
 
 func MarkdownReport(s *State, targets chan Host) string {
 	var report bytes.Buffer
-	currTime := strings.Replace(time.Now().Format(time.RFC3339), ":", "_", -1)
-	reportFile := path.Join(s.ReportDirectory, fmt.Sprintf("%v_Report.md", currTime))
+	t := time.Now()
+	currTime := fmt.Sprintf("%d%d%d%d%d%d", t.Year(), t.Month(), t.Day(),
+		t.Hour(), t.Minute(), t.Second())
+	var reportFile string
+	if s.ProjectName != "" {
+		reportFile = path.Join(s.ReportDirectory, fmt.Sprintf("%v_%v_Report.md", s.ProjectName, currTime))
+
+	} else {
+		reportFile = path.Join(s.ReportDirectory, fmt.Sprintf("%v_Report.md", currTime))
+	}
 	file, err := os.Create(reportFile)
 	if err != nil {
 		panic(err)
@@ -38,7 +45,7 @@ func JSONify(s *State) {
 
 }
 
-func SanitiseFilename(UnsanitisedFilename string) (filename string) {
+func SanitiseFilename(UnsanitisedFilename string) string {
 	r := regexp.MustCompile("[0-9a-zA-Z-._]")
 	return r.ReplaceAllString(UnsanitisedFilename, "[0-9a-zA-Z-._]")
 }

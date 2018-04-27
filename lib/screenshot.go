@@ -7,9 +7,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/benbjohnson/phantomjs"
+	"github.com/swarley7/phantomjs"
 )
 
+// Screenshots a url derived from a Host{} object
 func ScreenshotAURL(wg *sync.WaitGroup, s *State, cnt int, host Host, results chan Host, threads chan struct{}) (err error) {
 	defer func() {
 		<-threads
@@ -24,6 +25,7 @@ func ScreenshotAURL(wg *sync.WaitGroup, s *State, cnt int, host Host, results ch
 		return err
 	}
 	defer page.Close()
+
 	page.SetSettings(phantomjs.WebPageSettings{ResourceTimeout: s.Timeout}) // Time out the page if it takes too long to load. Sometimes JS is fucky and takes wicked long to do nothing forever :(
 
 	if strings.HasPrefix(host.Path, "/") {
@@ -49,7 +51,9 @@ func ScreenshotAURL(wg *sync.WaitGroup, s *State, cnt int, host Host, results ch
 		// <-target
 		return err
 	}
-	currTime := strings.Replace(time.Now().Format(time.RFC3339), ":", "_", -1)
+	t := time.Now()
+	currTime := fmt.Sprintf("%d%d%d%d%d%d", t.Year(), t.Month(), t.Day(),
+		t.Hour(), t.Minute(), t.Second())
 	var screenshotFilename string
 	if s.ProjectName != "" {
 		screenshotFilename = fmt.Sprintf("%v/%v_%v_%v_%v-%v_%v.png", s.ScreenshotDirectory, strings.ToLower(strings.Replace(s.ProjectName, " ", "_", -1)), host.Protocol, host.HostAddr, host.Port, currTime, rand.Int63())

@@ -40,18 +40,11 @@ func RoutineManager(s *State, ScanChan chan Host, DirbustChan chan Host, Screens
 	var scanWg = sync.WaitGroup{}
 	var dirbWg = sync.WaitGroup{}
 	var screenshotWg = sync.WaitGroup{}
-	// var firstRunS bool = true
-	// var firstRunD bool = true
-	// var firstRunSS bool = true
-	// var doneScan bool = false
-	// var doneDirbust bool = false
-	// var doneScreenshot bool = false
 
-	// var cnt int
 	ticker := time.NewTicker(10 * time.Second)
 	go func() {
 		for t := range ticker.C {
-			fmt.Println("Tick at", t)
+			fmt.Printf("Tick at %v\n", t)
 		}
 	}()
 	wg.Add(1)
@@ -60,7 +53,6 @@ func RoutineManager(s *State, ScanChan chan Host, DirbustChan chan Host, Screens
 			close(ScanChan)
 			wg.Done()
 		}()
-
 		if !s.Scan {
 			for host := range s.Targets {
 				ScanChan <- host
@@ -85,7 +77,15 @@ func RoutineManager(s *State, ScanChan chan Host, DirbustChan chan Host, Screens
 
 		if !s.Dirbust {
 			for host := range ScanChan {
-				DirbustChan <- host
+				if !s.URLProvided {
+					for scheme := range s.Protocols.Set {
+						host.Protocol = scheme
+						DirbustChan <- host
+					}
+
+				} else {
+					DirbustChan <- host
+				}
 			}
 			return
 		}

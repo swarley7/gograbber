@@ -10,8 +10,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/benbjohnson/phantomjs"
 	multierror "github.com/hashicorp/go-multierror"
+	phantomjs "github.com/swarley7/phantomjs"
 )
 
 // Initialise sets up the program's state
@@ -115,8 +115,10 @@ func Initialise(s *State, ports string, wordlist string, statusCodesIgn string, 
 
 // Start does the thing
 func Start(s State) {
+	fmt.Printf(LineSep())
+
 	os.Mkdir(path.Join(s.OutputDirectory), 0755) // drwxr-xr-x
-	cl.Timeout = s.Timeout * time.Second
+	// cl.Timeout = s.Timeout * time.Second
 	// d.Timeout = 1 * time.Second
 	// d.DisableKeepAlives()
 
@@ -124,20 +126,21 @@ func Start(s State) {
 	DirbChan := make(chan Host)
 	ScreenshotChan := make(chan Host)
 	if s.Screenshot {
-		var numProcs int = 3
-		procs := make([]phantomjs.Process, numProcs)
+		procs := make([]phantomjs.Process, s.NumPhantomProcs)
 		if s.Debug {
-			fmt.Printf("Creating [%v] PhantomJS processes... This could take a second\n", numProcs)
+			fmt.Printf("Creating [%v] PhantomJS processes... This could take a second\n", s.NumPhantomProcs)
 		}
-		for i := 0; i < numProcs; i++ {
+		for i := 0; i < s.NumPhantomProcs; i++ {
 			procs[i] = phantomjs.Process{BinPath: s.PhantomJSPath,
-				Port:   phantomjs.DefaultPort + i,
-				Stdout: os.Stdout,
-				Stderr: os.Stderr}
+				Port:            phantomjs.DefaultPort + i,
+				Stdout:          os.Stdout,
+				Stderr:          os.Stderr,
+				IgnoreSslErrors: s.IgnoreSSLErrors,
+			}
 			if err := procs[i].Open(); err != nil {
 				panic(err)
 			}
-			fmt.Printf("-> Process: #[%v] of [%v] created on localhost:%v\n", i, numProcs, phantomjs.DefaultPort+i)
+			fmt.Printf("-> Phantomjs process: #[%v] (%v of %v) created on localhost:%v\n", i, i+1, s.NumPhantomProcs, phantomjs.DefaultPort+i)
 			defer procs[i].Close()
 		}
 		s.PhantomProcesses = procs

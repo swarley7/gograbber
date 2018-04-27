@@ -3,7 +3,7 @@ package lib
 import (
 	"time"
 
-	"github.com/benbjohnson/phantomjs"
+	"github.com/swarley7/phantomjs"
 )
 
 type State struct {
@@ -19,7 +19,7 @@ type State struct {
 	ProjectName            string
 	DirbustOutputDirectory string
 	IncludeLength          bool
-	DisplayEnvVar          string
+	NumPhantomProcs        int
 	Ratio                  float64
 	Soft404Detection       bool
 	Soft404Method          int
@@ -39,6 +39,7 @@ type State struct {
 	ShowIPs                bool
 	Protocols              StringSet
 	StatusCodes            IntSet
+	IgnoreSSLErrors        bool
 	StatusCodesIgn         IntSet
 	ImgX                   int
 	ImgY                   int

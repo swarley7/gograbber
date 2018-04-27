@@ -70,15 +70,15 @@ func (host *Host) Soft404DoneCheck(hashes map[string]bool) bool {
 }
 
 var d = net.Dialer{
-	Timeout:   2 * time.Second,
+	Timeout:   500 * time.Millisecond,
 	KeepAlive: 0,
 }
 var tx = &http.Transport{
 	DialContext:           (d).DialContext,
-	TLSHandshakeTimeout:   3 * time.Second,
+	TLSHandshakeTimeout:   2 * time.Second,
 	MaxIdleConns:          100, //This could potentially be dropped to 1, we aren't going to hit the same server more than once ever
-	IdleConnTimeout:       2 * time.Second,
-	ExpectContinueTimeout: 3 * time.Second,
+	IdleConnTimeout:       1 * time.Second,
+	ExpectContinueTimeout: 1 * time.Second,
 	DisableKeepAlives:     true, //keep things alive if possible - reuse connections
 	DisableCompression:    true,
 	TLSClientConfig:       &tls.Config{InsecureSkipVerify: true},
@@ -86,7 +86,7 @@ var tx = &http.Transport{
 
 var cl = http.Client{
 	Transport: tx,
-	Timeout:   2 * time.Second,
+	Timeout:   1 * time.Second,
 }
 
 func Hosts(cidr string) ([]string, error) {
