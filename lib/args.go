@@ -20,6 +20,7 @@ type State struct {
 	DirbustOutputDirectory string
 	IncludeLength          bool
 	NumPhantomProcs        int
+	HTTPResponseDirectory  string
 	Ratio                  float64
 	Soft404Detection       bool
 	Soft404Method          int

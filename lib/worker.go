@@ -131,12 +131,12 @@ func RoutineManager(s *State, ScanChan chan Host, DirbustChan chan Host, Screens
 					// fmt.Printf("HTTP GET to [%v://%v:%v/%v]\n", host.Protocol, host.HostAddr, host.Port, host.Path)
 					threadChan <- struct{}{}
 					dirbWg.Add(1)
-					go HTTPGetter(&dirbWg, host, s.Debug, s.Jitter, s.Soft404Detection, s.StatusCodesIgn, s.Ratio, path, DirbustChan, threadChan)
+					go HTTPGetter(&dirbWg, host, s.Debug, s.Jitter, s.Soft404Detection, s.StatusCodesIgn, s.Ratio, path, DirbustChan, threadChan, s.ProjectName, s.HTTPResponseDirectory)
 				}
 			} else {
 				threadChan <- struct{}{}
 				dirbWg.Add(1)
-				go HTTPGetter(&dirbWg, host, s.Debug, s.Jitter, s.Soft404Detection, s.StatusCodesIgn, s.Ratio, host.Path, DirbustChan, threadChan)
+				go HTTPGetter(&dirbWg, host, s.Debug, s.Jitter, s.Soft404Detection, s.StatusCodesIgn, s.Ratio, host.Path, DirbustChan, threadChan, s.ProjectName, s.HTTPResponseDirectory)
 			}
 		}
 		dirbWg.Wait()

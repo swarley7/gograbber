@@ -125,6 +125,10 @@ func Start(s State) {
 	ScanChan := make(chan Host)
 	DirbChan := make(chan Host)
 	ScreenshotChan := make(chan Host)
+	if s.Dirbust {
+		s.HTTPResponseDirectory = path.Join(s.OutputDirectory, "raw_http_response")
+		os.Mkdir(s.HTTPResponseDirectory, 0755) // drwxr-xr-x
+	}
 	if s.Screenshot {
 		procs := make([]phantomjs.Process, s.NumPhantomProcs)
 		if s.Debug {

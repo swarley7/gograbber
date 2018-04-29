@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"math/rand"
 	"net/http"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -53,7 +54,7 @@ func Prefetch(host Host, s *State) (h Host, err error) {
 	return host, nil
 }
 
-func HTTPGetter(wg *sync.WaitGroup, host Host, debug bool, jitter int, soft404Detection bool, statusCodesIgn IntSet, Ratio float64, path string, results chan Host, threads chan struct{}) {
+func HTTPGetter(wg *sync.WaitGroup, host Host, debug bool, jitter int, soft404Detection bool, statusCodesIgn IntSet, Ratio float64, path string, results chan Host, threads chan struct{}, ProjectName string, responseDirectory string) {
 	defer func() {
 		<-threads
 		wg.Done()
@@ -96,6 +97,24 @@ func HTTPGetter(wg *sync.WaitGroup, host Host, debug bool, jitter int, soft404De
 	}
 
 	fmt.Printf("%v - %v\n", url, host.HTTPResp.StatusCode)
+	t := time.Now()
+	currTime := fmt.Sprintf("%d%d%d%d%d%d", t.Year(), t.Month(), t.Day(),
+		t.Hour(), t.Minute(), t.Second())
+	var responseFilename string
+	if ProjectName != "" {
+		responseFilename = fmt.Sprintf("%v/%v_%v_%v_%v-%v_%v.html", responseDirectory, strings.ToLower(strings.Replace(responseFilename, " ", "_", -1)), host.Protocol, host.HostAddr, host.Port, currTime, rand.Int63())
+	} else {
+		responseFilename = fmt.Sprintf("%v/%v_%v_%v-%v_%v.html", responseDirectory, host.Protocol, host.HostAddr, host.Port, currTime, rand.Int63())
+	}
+	file, err := os.Create(responseFilename)
+	if err != nil {
+		panic(err)
+	}
+	buf, err := ioutil.ReadAll(host.HTTPResp.Body)
+	if err != nil {
+		panic(err)
+	}
+	file.Write(buf)
 	host.Path = path
 	results <- host
 }

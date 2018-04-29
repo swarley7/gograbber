@@ -3,11 +3,22 @@ package lib
 import (
 	"bytes"
 	"fmt"
+	"net/http"
 	"os"
 	"path"
 	"regexp"
 	"time"
 )
+
+func buildResponseHeader(header *http.Response) string {
+	// respHeader = fmt.Sprintf("%v %v", header.Proto, header.Status)
+	// for k, v := range header.Header {
+	// 	respHeader = fmt.Sprintf("%v\n%v: %v", respHeader, k, v[0])
+	// }
+	buf := new(bytes.Buffer)
+	header.Write(buf)
+	return buf.String()
+}
 
 func MarkdownReport(s *State, targets chan Host) string {
 	var report bytes.Buffer
@@ -30,7 +41,13 @@ func MarkdownReport(s *State, targets chan Host) string {
 	for URLComponent := range targets {
 		url := fmt.Sprintf("%v://%v:%v/%v\n", URLComponent.Protocol, URLComponent.HostAddr, URLComponent.Port, URLComponent.Path)
 		report.WriteString(fmt.Sprintf("## %v\n", url))
+		report.WriteString("### Screenshot\n")
 		report.WriteString(fmt.Sprintf("![%v](../../%v)\n", URLComponent.ScreenshotFilename, URLComponent.ScreenshotFilename))
+		if URLComponent.HTTPResp != nil {
+			report.WriteString("### Response Headers\n")
+
+			report.WriteString(fmt.Sprintf("```\n%v\n```\n", buildResponseHeader(URLComponent.HTTPResp)))
+		}
 
 	}
 	file.WriteString(report.String())
