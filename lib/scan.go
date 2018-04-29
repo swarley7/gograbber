@@ -8,43 +8,26 @@ import (
 	"time"
 )
 
-// ScanHosts performs a TCP Portscan of hosts. Currently uses complete handshake. May look into SYN scan later.
-func ScanHosts(s *State, targets chan Host) (ch chan Host) {
-	ch = make(chan Host)
-	var wg sync.WaitGroup
-	targetHost := make(TargetHost, s.Threads)
-	// totalHosts := len(s.URLComponents)
-	var cnt int
-	for urlComponent := range targets {
-		wg.Add(1)
-		routineId := Counter{cnt}
-		targetHost <- routineId
-		go targetHost.connectHost(s, urlComponent, ch, &wg)
-		cnt++
-	}
-	wg.Wait()
-	return ch
-}
-
 // connectHost does the actual TCP connection
-func (target TargetHost) connectHost(s *State, host Host, ch chan Host, wg *sync.WaitGroup) {
-	defer wg.Done()
-	if s.Debug {
+func ConnectHost(wg *sync.WaitGroup, timeout time.Duration, Jitter int, Debug bool, host Host, results chan Host, threads chan struct{}) {
+	defer func() {
+		<-threads
+		wg.Done()
+	}()
+	if Debug {
 		fmt.Printf("Port scanning: %v:%v\n", host.HostAddr, host.Port)
 	}
-	if s.Jitter > 0 {
-		jitter := time.Duration(rand.Intn(s.Jitter)) * time.Millisecond
-		if s.Debug {
+	if Jitter > 0 {
+		jitter := time.Duration(rand.Intn(Jitter)) * time.Millisecond
+		if Debug {
 			fmt.Printf("Jitter: %v\n", jitter)
 		}
 		time.Sleep(jitter)
 	}
-	d := net.Dialer{Timeout: s.Timeout}
-	conn, err := d.Dial("tcp", fmt.Sprintf("%v:%v", host.HostAddr, host.Port))
+	conn, err := net.DialTimeout("tcp", fmt.Sprintf("%v:%v", host.HostAddr, host.Port), timeout)
 	if err == nil {
 		fmt.Printf("%v:%v OPEN\n", host.HostAddr, host.Port)
 		conn.Close()
-		ch <- host
+		results <- host
 	}
-	<-target
 }

@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"math/rand"
 	"net/http"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -12,14 +13,9 @@ import (
 	"github.com/pmezard/go-difflib/difflib"
 )
 
-// I want this function to do some intelligent analysis of GET requests. e.g. detect whether 200 is a soft-404, or whether 403 is just a directory access denied
-// func SmartDetector(){
-
-// }
-
 // checks to see whether host is http/s or other scheme.
 // Returns error if endpoint is not a valid webserver. Prevents
-func prefetch(host Host, s *State) (h Host, err error) {
+func Prefetch(host Host, s *State) (h Host, err error) {
 	var url string
 	for scheme := range s.Protocols.Set {
 		if s.Jitter > 0 {
@@ -58,106 +54,11 @@ func prefetch(host Host, s *State) (h Host, err error) {
 	return host, nil
 }
 
-func DirbustHosts(s *State) (h1 []Host) {
-	hostChan := make(chan Host)
-	// respChan := make(chan *http.Response, s.Threads)
-
-	wg := sync.WaitGroup{}
-	// go func() {
-	// 	x := time.NewTicker(time.Second * 1)
-	// 	for _ = range x.C {
-	// 		fmt.Println(wg)
-	// 	}
-	// }()
-	targetHost := make(TargetHost, s.Threads)
-	var cnt int
-	for _, host := range s.URLComponents {
-		var err error
-		if !s.URLProvided {
-			host, err = prefetch(host, s)
-			// fmt.Println(host, err)
-			if err != nil {
-				continue
-			}
-			if host.Protocol == "" {
-				continue
-			}
-
-		}
-		if s.Soft404Detection {
-			randURL := fmt.Sprintf("%v://%v:%v/%v", host.Protocol, host.HostAddr, host.Port, RandString(16))
-			randResp, err := cl.Get(randURL)
-			if err != nil {
-				continue
-				// panic(err)
-			}
-			data, err := ioutil.ReadAll(randResp.Body)
-			if err != nil {
-				// panic(err)
-				continue
-			}
-			randResp.Body.Close()
-			host.Soft404RandomURL = randURL
-			host.Soft404RandomPageContents = strings.Split(string(data), " ")
-		}
-		for path := range host.Paths.Set {
-			routineId := Counter{cnt}
-			targetHost <- routineId
-			wg.Add(1)
-			go targetHost.HTTPGetter(host, s.Debug, s.Jitter, s.Soft404Detection, s.StatusCodesIgn, s.Ratio, path, hostChan, &wg, s.Timeout)
-			cnt++
-		}
-	}
-
-	wg.Wait()
-	func() {
-		for url := range hostChan {
-			h1 = append(h1, url)
-		}
+func HTTPGetter(wg *sync.WaitGroup, host Host, debug bool, jitter int, soft404Detection bool, statusCodesIgn IntSet, Ratio float64, path string, results chan Host, threads chan struct{}, ProjectName string, responseDirectory string) {
+	defer func() {
+		<-threads
+		wg.Done()
 	}()
-	close(hostChan)
-	// close(respChan)
-	// write resps to file? return hosts for now
-	return h1
-}
-
-// func distributeHTTPRequests(s *State, host Host, hostChan chan<- Host, wg *sync.WaitGroup) {
-// 	defer wg.Done()
-// 	var err error
-// 	if !s.URLProvided {
-// 		host, err = prefetch(host, s)
-// 		// fmt.Println(host, err)
-// 		if err != nil {
-// 			return
-// 		}
-// 		if host.Protocol == "" {
-// 			return
-// 		}
-
-// 	}
-// 	if s.Soft404Detection {
-// 		randURL := fmt.Sprintf("%v://%v:%v/%v", host.Protocol, host.HostAddr, host.Port, RandString(16))
-// 		randResp, err := cl.Get(randURL)
-// 		if err != nil {
-// 			panic(err)
-// 		}
-// 		data, err := ioutil.ReadAll(randResp.Body)
-// 		if err != nil {
-// 			panic(err)
-// 		}
-// 		randResp.Body.Close()
-// 		host.Soft404RandomURL = randURL
-// 		host.Soft404RandomPageContents = strings.Split(string(data), " ")
-// 	}
-// 	for path := range host.Paths.Set {
-// 		wg.Add(1)
-// 		go HTTPGetter(host, s.Debug, s.Jitter, s.Soft404Detection, s.StatusCodesIgn, s.Ratio, path, hostChan, wg)
-// 	}
-// }
-
-func (target TargetHost) HTTPGetter(host Host, debug bool, jitter int, soft404Detection bool, statusCodesIgn IntSet, Ratio float64, path string, hostChan chan<- Host, wg *sync.WaitGroup, timeout time.Duration) {
-	defer wg.Done()
-	// debug
 	if strings.HasPrefix(path, "/") && len(path) > 0 {
 		path = path[1:] // strip preceding '/' char
 	}
@@ -172,92 +73,52 @@ func (target TargetHost) HTTPGetter(host Host, debug bool, jitter int, soft404De
 		}
 		time.Sleep(jitter)
 	}
-	// client := &http.Client{
-	// 	Transport:     tx,
-	// 	CheckRedirect: func(req *http.Request, via []*http.Request) error { return errors.New("something bad happened") },
-	// }
-	// client := &http.Client{
-	// 	Transport: tx}
-	resp, err := cl.Get(url)
+	var err error
+	host.HTTPReq, err = http.NewRequest("GET", url, nil)
 	if err != nil {
-		<-target
 		return
 	}
-	defer resp.Body.Close()
-	if statusCodesIgn.Contains(resp.StatusCode) {
-		<-target
+	host.HTTPResp, err = cl.Do(host.HTTPReq)
+	if err != nil {
+		return
+	}
+	defer host.HTTPResp.Body.Close()
+	if statusCodesIgn.Contains(host.HTTPResp.StatusCode) {
 		return
 	}
 	if soft404Detection && path != "" {
-		soft404Ratio := detectSoft404(resp, host.Soft404RandomPageContents)
+		soft404Ratio := detectSoft404(host.HTTPResp, host.Soft404RandomPageContents)
 		if soft404Ratio > Ratio {
 			if debug {
 				fmt.Printf("[%v] is very similar to [%v] (%.4f%% match)\n", url, host.Soft404RandomURL, (soft404Ratio * 100))
-
 			}
-			<-target
 			return
 		}
-
 	}
 
-	fmt.Printf("%v - %v\n", url, resp.StatusCode)
-	// host.Protocols = StringSet{map[string]bool{}}
-	// host.Protocols.Add(protocol)
-	host.Paths = StringSet{map[string]bool{}}
-	host.Paths.Add(path)
-	hostChan <- host
-	<-target
+	fmt.Printf("%v - %v\n", url, host.HTTPResp.StatusCode)
+	t := time.Now()
+	currTime := fmt.Sprintf("%d%d%d%d%d%d", t.Year(), t.Month(), t.Day(),
+		t.Hour(), t.Minute(), t.Second())
+	var responseFilename string
+	if ProjectName != "" {
+		responseFilename = fmt.Sprintf("%v/%v_%v_%v_%v-%v_%v.html", responseDirectory, strings.ToLower(strings.Replace(responseFilename, " ", "_", -1)), host.Protocol, host.HostAddr, host.Port, currTime, rand.Int63())
+	} else {
+		responseFilename = fmt.Sprintf("%v/%v_%v_%v-%v_%v.html", responseDirectory, host.Protocol, host.HostAddr, host.Port, currTime, rand.Int63())
+	}
+	file, err := os.Create(responseFilename)
+	if err != nil {
+		panic(err)
+	}
+	buf, err := ioutil.ReadAll(host.HTTPResp.Body)
+	if err != nil {
+		panic(err)
+	}
+	file.Write(buf)
+	host.Path = path
+	results <- host
 }
 
-// func HTTPHeader(host Host, debug bool, jitter int, soft404Detection bool, statusCodesIgn IntSet, Ratio float64, path string, hostChan chan<- Host, wg *sync.WaitGroup) {
-// 	defer wg.Done()
-// 	// debug
-// 	if strings.HasPrefix(path, "/") {
-// 		path = path[1:] // strip preceding '/' char
-// 	}
-// 	url := fmt.Sprintf("%v://%v:%v/%v", host.Protocol, host.HostAddr, host.Port, path)
-// 	if debug {
-// 		fmt.Printf("Trying URL: %v\n", url)
-// 	}
-// 	if jitter > 0 {
-// 		jitter := time.Duration(rand.Intn(jitter)) * time.Millisecond
-// 		if debug {
-// 			fmt.Printf("Jitter: %v\n", jitter)
-// 		}
-// 		time.Sleep(jitter)
-// 	}
-// 	// client := &http.Client{
-// 	// 	Transport:     tx,
-// 	// 	CheckRedirect: func(req *http.Request, via []*http.Request) error { return errors.New("something bad happened") },
-// 	// }
-// 	// client := &http.Client{
-// 	// 	Transport: tx}
-// 	req, err := http.NewRequest("HEAD", url, nil) // Use head, to save data
-// 	resp, err := cl.Do(req)
-// 	if err != nil {
-// 		return
-// 	}
-// 	defer resp.Body.Close()
-// 	if statusCodesIgn.Contains(resp.StatusCode) {
-// 		return
-// 	}
-// 	if soft404Detection && path != "/" {
-// 		soft404Ratio := detectSoft404(resp, host.Soft404RandomPageContents)
-// 		if soft404Ratio > Ratio {
-// 			fmt.Printf("[%v] is very similar to [%v] (%.5f%% match)\n", url, host.Soft404RandomURL, (soft404Ratio * 100))
-// 			return
-// 		}
-
-// 	}
-
-// 	fmt.Printf("%v - %v\n", url, resp.StatusCode)
-// 	// host.Protocols = StringSet{map[string]bool{}}
-// 	// host.Protocols.Add(protocol)
-// 	host.Paths = StringSet{map[string]bool{}}
-// 	host.Paths.Add(path)
-// 	hostChan <- host
-// }
 func detectSoft404(resp *http.Response, randRespData []string) (ratio float64) {
 	// defer resp.Body.Close()
 	diff := difflib.SequenceMatcher{}

@@ -2,8 +2,10 @@ package lib
 
 import (
 	"bufio"
+	"crypto/sha1"
 	"crypto/tls"
 	"fmt"
+	"io"
 	"math/rand"
 	"net"
 	"net/http"
@@ -14,8 +16,7 @@ import (
 	"time"
 )
 
-type Counter struct{ id int }
-type TargetHost chan Counter
+type TargetHost chan struct{}
 
 // Shim type for "set" containing ints
 type IntSet struct {
@@ -28,34 +29,64 @@ type StringSet struct {
 }
 
 type Host struct {
-	Paths                     StringSet
+	Path                      string
 	HostAddr                  string
 	Port                      int
 	Protocol                  string
 	ScreenshotFilename        string
 	Soft404RandomURL          string
 	Soft404RandomPageContents []string
+	PrefetchDone              bool
+	Soft404Done               bool
 	HTTPResp                  *http.Response
 	HTTPReq                   *http.Request
 }
 
+func (host *Host) PrefetchHash() (h string) {
+	hash := sha1.New()
+	io.WriteString(hash, host.HostAddr)
+	io.WriteString(hash, fmt.Sprintf("%d", host.Port))
+	return fmt.Sprintf("%x", hash.Sum(nil))
+}
+func (host *Host) PrefetchDoneCheck(hashes map[string]bool) bool {
+	if _, ok := hashes[host.PrefetchHash()]; ok {
+		return true
+	}
+	return false
+}
+
+func (host *Host) Soft404Hash() (h string) {
+	hash := sha1.New()
+	io.WriteString(hash, host.HostAddr)
+	io.WriteString(hash, fmt.Sprintf("%d", host.Port))
+	io.WriteString(hash, host.Protocol)
+	return fmt.Sprintf("%x", hash.Sum(nil))
+}
+func (host *Host) Soft404DoneCheck(hashes map[string]bool) bool {
+	if _, ok := hashes[host.Soft404Hash()]; ok {
+		return true
+	}
+	return false
+}
+
+var d = net.Dialer{
+	Timeout:   500 * time.Millisecond,
+	KeepAlive: 0,
+}
 var tx = &http.Transport{
-	DialContext: (&net.Dialer{
-		//transports don't have default timeouts because having sensible defaults would be too good
-		Timeout: 3 * time.Second,
-	}).DialContext,
-	TLSHandshakeTimeout:   5 * time.Second,
+	DialContext:           (d).DialContext,
+	TLSHandshakeTimeout:   2 * time.Second,
 	MaxIdleConns:          100, //This could potentially be dropped to 1, we aren't going to hit the same server more than once ever
-	IdleConnTimeout:       2 * time.Second,
-	ExpectContinueTimeout: 3 * time.Second,
-	DisableKeepAlives:     false, //keep things alive if possible - reuse connections
+	IdleConnTimeout:       1 * time.Second,
+	ExpectContinueTimeout: 1 * time.Second,
+	DisableKeepAlives:     true, //keep things alive if possible - reuse connections
 	DisableCompression:    true,
 	TLSClientConfig:       &tls.Config{InsecureSkipVerify: true},
 }
 
 var cl = http.Client{
 	Transport: tx,
-	Timeout:   time.Second * 5, //eyy no reasonable timeout on clients too!
+	Timeout:   1 * time.Second,
 }
 
 func Hosts(cidr string) ([]string, error) {
@@ -239,16 +270,16 @@ func ChunkString(s string, chunkSize int) []string {
 	return chunks
 }
 
-func GenerateURLs(targetList StringSet, Ports IntSet, Paths *StringSet) (HostStructs []Host) {
+func GenerateURLs(targetList StringSet, Ports IntSet, Paths *StringSet, targets chan Host) {
+	defer close(targets)
 	for target, _ := range targetList.Set {
 		for port, _ := range Ports.Set {
-			HostStructs = append(HostStructs, Host{Port: port, HostAddr: target, Paths: *Paths})
+			targets <- Host{Port: port, HostAddr: target}
 		}
 	}
-	return HostStructs
 }
 
-func ParseURLToHost(URL string) (host Host, err error) {
+func ParseURLToHost(URL string, targets chan Host) {
 	URLObj, err := url.ParseRequestURI(URL)
 	if err != nil {
 		// URL isn't valid
@@ -259,18 +290,17 @@ func ParseURLToHost(URL string) (host Host, err error) {
 	if port != "" {
 		Port, err = strconv.Atoi(port)
 	} else {
-		if URLObj.Scheme == strings.ToLower("http") {
+		if strings.ToLower(URLObj.Scheme) == "http" {
 			Port = 80
-		} else if URLObj.Scheme == strings.ToLower("https") {
+		} else if strings.ToLower(URLObj.Scheme) == "https" {
 			Port = 443
 		} else {
 			fmt.Println(URLObj.Scheme)
 			return
 		}
 	}
-	paths := StringSet{Set: map[string]bool{}}
-	paths.Add(URLObj.RawQuery)
-	return Host{HostAddr: URLObj.Hostname(), Paths: paths, Protocol: URLObj.Scheme, Port: Port}, err
+	path := URLObj.RawQuery
+	targets <- Host{HostAddr: URLObj.Hostname(), Path: path, Protocol: URLObj.Scheme, Port: Port}
 }
 
 func makeRange(min, max int) []int {

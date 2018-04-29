@@ -54,13 +54,16 @@ func parseCMDLine() *lib.State {
 	flag.StringVar(&s.ProjectName, "project", "hack", "Name this project (if you want, otherwise... whatever?)")
 
 	// screenshot related
+
 	flag.BoolVar(&s.Screenshot, "screenshot", false, "Take pretty pictures of discovered URLs")
+	flag.IntVar(&s.NumPhantomProcs, "p_procs", 5, "Number of phantomjs processes to spawn; helps when you're trying to screenshot a ton of stuff at once.")
+
 	flag.IntVar(&s.ImgX, "img_x", 1024, "The width of screenshot images in pixels")
 	flag.IntVar(&s.ImgY, "img_y", 800, "The height of screenshot images in pixels")
-	flag.StringVar(&s.DisplayEnvVar, "d", ":0.0", "If required, set a different variable for env['DISPLAY']")
 	flag.IntVar(&s.ScreenshotQuality, "Q", 50, "Screenshot quality as a percentage (higher means more megatronz per screenshot).")
 	flag.StringVar(&s.PhantomJSPath, "phantomjs", "phantomjs", "Path to phantomjs binary for rendering web pages")
 	flag.BoolVar(&AdvancedUsage, "hh", false, "Print advanced usage details with examples!")
+	flag.BoolVar(&s.IgnoreSSLErrors, "k", true, "Ignore SSL/TLS cert validation errors (super secure amirite?). Look, if you're using this app you probably know the risks, and let's face it, dgaf.")
 
 	flag.Parse()
 	lib.PrintBanner(&s)

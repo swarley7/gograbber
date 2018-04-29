@@ -3,7 +3,7 @@ package lib
 import (
 	"time"
 
-	"github.com/benbjohnson/phantomjs"
+	"github.com/swarley7/phantomjs"
 )
 
 type State struct {
@@ -19,10 +19,13 @@ type State struct {
 	ProjectName            string
 	DirbustOutputDirectory string
 	IncludeLength          bool
-	DisplayEnvVar          string
+	NumPhantomProcs        int
+	HTTPResponseDirectory  string
 	Ratio                  float64
 	Soft404Detection       bool
 	Soft404Method          int
+	PrefetchedHosts        map[string]bool
+	Soft404edHosts         map[string]bool
 	NoStatus               bool
 	Hosts                  StringSet
 	InputFile              string
@@ -37,6 +40,7 @@ type State struct {
 	ShowIPs                bool
 	Protocols              StringSet
 	StatusCodes            IntSet
+	IgnoreSSLErrors        bool
 	StatusCodesIgn         IntSet
 	ImgX                   int
 	ImgY                   int
@@ -48,6 +52,7 @@ type State struct {
 	SingleURL              string
 	PhantomJSPath          string
 	URLComponents          []Host
+	Targets                chan Host
 	Paths                  StringSet
 	UseSlash               bool
 	Scan                   bool
