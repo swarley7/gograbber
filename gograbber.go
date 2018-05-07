@@ -2,11 +2,10 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"gograbber/lib"
-	"log"
 	"net/http"
 	_ "net/http/pprof"
+	"os"
 )
 
 func parseCMDLine() *lib.State {
@@ -18,6 +17,8 @@ func parseCMDLine() *lib.State {
 	var protocols string
 	var timeout int
 	var AdvancedUsage bool
+	lib.InitLogger(os.Stdout, os.Stdout, os.Stdout, os.Stdout, os.Stderr)
+
 	// Commandline arguments
 	// Global
 	flag.IntVar(&s.Threads, "t", 20, "Number of concurrent threads")
@@ -66,14 +67,15 @@ func parseCMDLine() *lib.State {
 	flag.BoolVar(&s.IgnoreSSLErrors, "k", true, "Ignore SSL/TLS cert validation errors (super secure amirite?). Look, if you're using this app you probably know the risks, and let's face it, dgaf.")
 
 	flag.Parse()
+	lib.InitColours()
 	lib.PrintBanner(&s)
 	if err := lib.Initialise(&s, ports, wordlist, statusCodesIgn, protocols, timeout, AdvancedUsage); err.ErrorOrNil() != nil {
-		fmt.Printf("%s\n", err.Error())
+		lib.Error.Printf("%s\n", err.Error())
 		return nil
 	}
 	if s.Debug {
 		go func() {
-			log.Println(http.ListenAndServe("localhost:6060", nil))
+			lib.Debug.Println(http.ListenAndServe("localhost:6060", nil))
 		}()
 	}
 	return &s

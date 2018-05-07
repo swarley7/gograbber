@@ -4,16 +4,12 @@ import (
 	"bufio"
 	"fmt"
 	"io/ioutil"
+	"math/rand"
 	"os"
 	"strings"
 	"sync"
 	"time"
 )
-
-// func statusUpdater() {
-// 	//update output every 3 seconds or so
-// 	tick := time.Tick(time.Second * 3)
-// }
 
 func writerWorker(writeChan chan []byte, filename string) {
 	file, err := os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
@@ -40,13 +36,20 @@ func RoutineManager(s *State, ScanChan chan Host, DirbustChan chan Host, Screens
 	var scanWg = sync.WaitGroup{}
 	var dirbWg = sync.WaitGroup{}
 	var screenshotWg = sync.WaitGroup{}
+	t := time.Now()
+	currTime := fmt.Sprintf("%d%d%d%d%d%d", t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second())
+	if s.Debug {
+		ticker := time.NewTicker(10 * time.Second)
+		startTime := time.Now()
+		go func() {
+			var currTime time.Duration
+			for t := range ticker.C {
+				currTime = t.Sub(startTime)
+				Debug.Printf("Elapsed %v\n", currTime)
+			}
+		}()
+	}
 
-	ticker := time.NewTicker(10 * time.Second)
-	go func() {
-		for t := range ticker.C {
-			fmt.Printf("Tick at %v\n", t)
-		}
-	}()
 	wg.Add(1)
 	go func() {
 		defer func() {
@@ -59,10 +62,19 @@ func RoutineManager(s *State, ScanChan chan Host, DirbustChan chan Host, Screens
 			}
 			return
 		}
+		sWriteChan := make(chan []byte)
+		var portScanOutFile string
+
+		if s.ProjectName != "" {
+			portScanOutFile = fmt.Sprintf("%v/hosts_%v_%v_%v.txt", s.ScanOutputDirectory, strings.ToLower(strings.Replace(s.ProjectName, " ", "_", -1)), currTime, rand.Int63())
+		} else {
+			portScanOutFile = fmt.Sprintf("%v/hosts_%v_%v_%v.txt", s.ScanOutputDirectory, currTime, rand.Int63())
+		}
+		go writerWorker(sWriteChan, portScanOutFile)
 		for host := range s.Targets {
 			scanWg.Add(1)
 			threadChan <- struct{}{}
-			go ConnectHost(&scanWg, s.Timeout*time.Second, s.Jitter, s.Debug, host, ScanChan, threadChan)
+			go ConnectHost(&scanWg, s.Timeout*time.Second, s.Jitter, s.Debug, host, ScanChan, threadChan, sWriteChan)
 		}
 		scanWg.Wait()
 		return
@@ -126,17 +138,26 @@ func RoutineManager(s *State, ScanChan chan Host, DirbustChan chan Host, Screens
 			if fuggoff {
 				continue
 			}
+			var dirbustOutFile string
+			dWriteChan := make(chan []byte)
+
+			go writerWorker(dWriteChan, dirbustOutFile)
+
+			if s.ProjectName != "" {
+				dirbustOutFile = fmt.Sprintf("%v/urls_%v_%v_%v.txt", s.DirbustOutputDirectory, strings.ToLower(strings.Replace(s.ProjectName, " ", "_", -1)), currTime, rand.Int63())
+			} else {
+				dirbustOutFile = fmt.Sprintf("%v/urls_%v_%v_%v.txt", s.DirbustOutputDirectory, currTime, rand.Int63())
+			}
 			if !s.URLProvided {
 				for path, _ := range s.Paths.Set {
-					// fmt.Printf("HTTP GET to [%v://%v:%v/%v]\n", host.Protocol, host.HostAddr, host.Port, host.Path)
 					threadChan <- struct{}{}
 					dirbWg.Add(1)
-					go HTTPGetter(&dirbWg, host, s.Debug, s.Jitter, s.Soft404Detection, s.StatusCodesIgn, s.Ratio, path, DirbustChan, threadChan, s.ProjectName, s.HTTPResponseDirectory)
+					go HTTPGetter(&dirbWg, host, s.Debug, s.Jitter, s.Soft404Detection, s.StatusCodesIgn, s.Ratio, path, DirbustChan, threadChan, s.ProjectName, s.HTTPResponseDirectory, dWriteChan)
 				}
 			} else {
 				threadChan <- struct{}{}
 				dirbWg.Add(1)
-				go HTTPGetter(&dirbWg, host, s.Debug, s.Jitter, s.Soft404Detection, s.StatusCodesIgn, s.Ratio, host.Path, DirbustChan, threadChan, s.ProjectName, s.HTTPResponseDirectory)
+				go HTTPGetter(&dirbWg, host, s.Debug, s.Jitter, s.Soft404Detection, s.StatusCodesIgn, s.Ratio, host.Path, DirbustChan, threadChan, s.ProjectName, s.HTTPResponseDirectory, dWriteChan)
 			}
 		}
 		dirbWg.Wait()
@@ -165,16 +186,4 @@ func RoutineManager(s *State, ScanChan chan Host, DirbustChan chan Host, Screens
 		screenshotWg.Wait()
 		return
 	}()
-
-	// go func() {
-	// 	for {
-	// 		select {
-	// 		case <-targetHost:
-	// 			{
-	// 				continue
-	// 			}
-
-	// 		}
-	// 	}
-	// }()
 }

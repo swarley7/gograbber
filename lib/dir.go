@@ -18,16 +18,10 @@ import (
 func Prefetch(host Host, s *State) (h Host, err error) {
 	var url string
 	for scheme := range s.Protocols.Set {
-		if s.Jitter > 0 {
-			jitter := time.Duration(rand.Intn(s.Jitter)) * time.Millisecond
-			if s.Debug {
-				fmt.Printf("Jitter: %v\n", jitter)
-			}
-			time.Sleep(jitter)
-		}
+		ApplyJitter(s.Jitter)
 		url = fmt.Sprintf("%v://%v:%v", scheme, host.HostAddr, host.Port)
 		if s.Debug {
-			fmt.Printf("Prefetch URL: %v\n", url)
+			Debug.Printf("Prefetch URL: %v\n", url)
 		}
 		resp, err := cl.Get(url)
 		// resp.Body.Close()
@@ -54,7 +48,7 @@ func Prefetch(host Host, s *State) (h Host, err error) {
 	return host, nil
 }
 
-func HTTPGetter(wg *sync.WaitGroup, host Host, debug bool, jitter int, soft404Detection bool, statusCodesIgn IntSet, Ratio float64, path string, results chan Host, threads chan struct{}, ProjectName string, responseDirectory string) {
+func HTTPGetter(wg *sync.WaitGroup, host Host, debug bool, Jitter int, soft404Detection bool, statusCodesIgn IntSet, Ratio float64, path string, results chan Host, threads chan struct{}, ProjectName string, responseDirectory string, writeChan chan []byte) {
 	defer func() {
 		<-threads
 		wg.Done()
@@ -64,15 +58,10 @@ func HTTPGetter(wg *sync.WaitGroup, host Host, debug bool, jitter int, soft404De
 	}
 	url := fmt.Sprintf("%v://%v:%v/%v", host.Protocol, host.HostAddr, host.Port, path)
 	if debug {
-		fmt.Printf("Trying URL: %v\n", url)
+		Debug.Printf("Trying URL: %v\n", url)
 	}
-	if jitter > 0 {
-		jitter := time.Duration(rand.Intn(jitter)) * time.Millisecond
-		if debug {
-			fmt.Printf("Jitter: %v\n", jitter)
-		}
-		time.Sleep(jitter)
-	}
+	ApplyJitter(Jitter)
+
 	var err error
 	host.HTTPReq, err = http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -90,33 +79,40 @@ func HTTPGetter(wg *sync.WaitGroup, host Host, debug bool, jitter int, soft404De
 		soft404Ratio := detectSoft404(host.HTTPResp, host.Soft404RandomPageContents)
 		if soft404Ratio > Ratio {
 			if debug {
-				fmt.Printf("[%v] is very similar to [%v] (%.4f%% match)\n", url, host.Soft404RandomURL, (soft404Ratio * 100))
+				Debug.Printf("[%v] is very similar to [%v] (%.4f%% match)\n", url, host.Soft404RandomURL, (soft404Ratio * 100))
 			}
 			return
 		}
 	}
 
-	fmt.Printf("%v - %v\n", url, host.HTTPResp.StatusCode)
+	Good.Printf("%v - %v\n", url, g.Sprintf("%d", host.HTTPResp.StatusCode))
 	t := time.Now()
 	currTime := fmt.Sprintf("%d%d%d%d%d%d", t.Year(), t.Month(), t.Day(),
 		t.Hour(), t.Minute(), t.Second())
 	var responseFilename string
 	if ProjectName != "" {
-		responseFilename = fmt.Sprintf("%v/%v_%v_%v_%v-%v_%v.html", responseDirectory, strings.ToLower(strings.Replace(responseFilename, " ", "_", -1)), host.Protocol, host.HostAddr, host.Port, currTime, rand.Int63())
+		responseFilename = fmt.Sprintf("%v/%v_%v_%v_%v-%v_%v.html", responseDirectory, strings.ToLower(strings.Replace(ProjectName, " ", "_", -1)), host.Protocol, host.HostAddr, host.Port, currTime, rand.Int63())
 	} else {
 		responseFilename = fmt.Sprintf("%v/%v_%v_%v-%v_%v.html", responseDirectory, host.Protocol, host.HostAddr, host.Port, currTime, rand.Int63())
 	}
 	file, err := os.Create(responseFilename)
 	if err != nil {
-		panic(err)
+		Error.Printf("%v\n", err)
 	}
 	buf, err := ioutil.ReadAll(host.HTTPResp.Body)
 	if err != nil {
-		panic(err)
+		Error.Printf("%v\n", err)
+	} else {
+		if len(buf) > 0 {
+			file.Write(buf)
+			host.ResponseBodyFilename = responseFilename
+		} else {
+			_ = os.Remove(responseFilename)
+		}
 	}
-	file.Write(buf)
 	host.Path = path
 	results <- host
+	writeChan <- []byte(fmt.Sprintf("%v\n", url))
 }
 
 func detectSoft404(resp *http.Response, randRespData []string) (ratio float64) {

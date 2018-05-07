@@ -6,6 +6,7 @@ import (
 	"crypto/tls"
 	"fmt"
 	"io"
+	"log"
 	"math/rand"
 	"net"
 	"net/http"
@@ -14,7 +15,16 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/fatih/color"
 )
+
+// Get yo colours sorted
+var g = color.New(color.FgGreen, color.Bold)
+var y = color.New(color.FgYellow, color.Bold)
+var r = color.New(color.FgRed, color.Bold)
+var m = color.New(color.FgMagenta, color.Bold)
+var b = color.New(color.FgBlue, color.Bold)
 
 type TargetHost chan struct{}
 
@@ -34,6 +44,7 @@ type Host struct {
 	Port                      int
 	Protocol                  string
 	ScreenshotFilename        string
+	ResponseBodyFilename      string
 	Soft404RandomURL          string
 	Soft404RandomPageContents []string
 	PrefetchDone              bool
@@ -69,6 +80,53 @@ func (host *Host) Soft404DoneCheck(hashes map[string]bool) bool {
 	return false
 }
 
+var (
+	Good    *log.Logger
+	Info    *log.Logger
+	Warning *log.Logger
+	Debug   *log.Logger
+	Error   *log.Logger
+)
+
+// var g, y, r, m, b *color.Color
+
+func InitColours() {
+
+}
+
+func InitLogger(
+	goodHandle io.Writer,
+	infoHandle io.Writer,
+	debugHandle io.Writer,
+	warningHandle io.Writer,
+	errorHandle io.Writer) {
+	// g := color.New(color.FgGreen, color.Bold)
+	// y := color.New(color.FgYellow, color.Bold)
+	// r := color.New(color.FgRed, color.Bold)
+	// m := color.New(color.FgMagenta, color.Bold)
+	// b := color.New(color.FgBlue, color.Bold)
+
+	Good = log.New(goodHandle,
+		g.Sprintf("GOOD: "),
+		log.Ldate|log.Ltime|log.Lshortfile)
+
+	Info = log.New(infoHandle,
+		b.Sprintf("INFO: "),
+		log.Ldate|log.Ltime|log.Lshortfile)
+
+	Debug = log.New(debugHandle,
+		y.Sprintf("DEBUG: "),
+		log.Ldate|log.Ltime|log.Lshortfile)
+
+	Warning = log.New(warningHandle,
+		m.Sprintf("WARNING: "),
+		log.Ldate|log.Ltime|log.Lshortfile)
+
+	Error = log.New(errorHandle,
+		r.Sprintf("ERROR: "),
+		log.Ldate|log.Ltime|log.Lshortfile)
+}
+
 var d = net.Dialer{
 	Timeout:   500 * time.Millisecond,
 	KeepAlive: 0,
@@ -87,6 +145,13 @@ var tx = &http.Transport{
 var cl = http.Client{
 	Transport: tx,
 	Timeout:   1 * time.Second,
+}
+
+func ApplyJitter(Jitter int) {
+	if Jitter > 0 {
+		jitter := time.Duration(rand.Intn(Jitter)) * time.Millisecond
+		time.Sleep(jitter)
+	}
 }
 
 func Hosts(cidr string) ([]string, error) {

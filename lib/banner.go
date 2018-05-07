@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
-
-	"github.com/fatih/color"
 )
 
 // PrintBanner prints the banner... HOW GOOD IS THE BANNER?
@@ -25,8 +23,9 @@ $$\   $$ |          $$\   $$ |
 
 	var version = "0.1a"
 	var author = "swarley (@swarley777)"
+
 	if s.VerbosityLevel > 0 {
-		g := color.New(color.FgGreen, color.Bold)
+		// g := color.New(color.FgGreen, color.Bold)
 
 		fmt.Printf("%v\n", strings.Replace(banner, "$", g.Sprintf("$"), -1))
 		fmt.Printf("%v\n", LeftPad2Len(fmt.Sprintf("Author: %v", author), " ", 89))
@@ -46,7 +45,7 @@ func PrintOpts(s *State) {
 	if s.VerbosityLevel > 4 {
 		for i := 0; i < keys.NumField(); i++ {
 			f := keys.Field(i)
-			fmt.Printf("%s: = %v\n", typeOfT.Field(i).Name, f.Interface())
+			Debug.Printf("%s: = %v\n", typeOfT.Field(i).Name, f.Interface())
 		}
 		fmt.Printf(LineSep())
 	}

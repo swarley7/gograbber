@@ -1,6 +1,7 @@
 package lib
 
 import (
+	"net/http"
 	"time"
 
 	"github.com/swarley7/phantomjs"
@@ -20,6 +21,7 @@ type State struct {
 	DirbustOutputDirectory string
 	IncludeLength          bool
 	NumPhantomProcs        int
+	HttpClient             *http.Client
 	HTTPResponseDirectory  string
 	Ratio                  float64
 	Soft404Detection       bool

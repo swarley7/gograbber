@@ -41,18 +41,28 @@ func MarkdownReport(s *State, targets chan Host) string {
 	// Header
 	report.WriteString(fmt.Sprintf("# Gograbber report - %v (%v)\n", s.ProjectName, currTime))
 	for URLComponent := range targets {
+
 		url := fmt.Sprintf("%v://%v:%v/%v\n", URLComponent.Protocol, URLComponent.HostAddr, URLComponent.Port, URLComponent.Path)
 		report.WriteString(fmt.Sprintf("## %v\n", url))
-		report.WriteString("### Screenshot\n")
-		report.WriteString(fmt.Sprintf("![%v](../../%v)\n", URLComponent.ScreenshotFilename, URLComponent.ScreenshotFilename))
 		if URLComponent.HTTPResp != nil {
 			report.WriteString("### Response Headers\n")
 
-			report.WriteString(fmt.Sprintf("```\n%v\n```\n", buildResponseHeader(URLComponent.HTTPResp)))
+			report.WriteString(fmt.Sprintf("```\n%v```\n", buildResponseHeader(URLComponent.HTTPResp)))
+			report.WriteString("### Response Body File\n")
+			if URLComponent.ResponseBodyFilename != "" {
+				report.WriteString(fmt.Sprintf("\n`%v`\n", URLComponent.ResponseBodyFilename))
+			} else {
+				report.WriteString(fmt.Sprintf("\n`<No output file>`\n"))
+
+			}
 		}
+		report.WriteString("### Screenshot\n")
+		report.WriteString(fmt.Sprintf("![%v](../../%v)\n", URLComponent.ScreenshotFilename, URLComponent.ScreenshotFilename))
+
+		file.WriteString(report.String())
+		report.Reset()
 
 	}
-	file.WriteString(report.String())
 	return reportFile
 }
 

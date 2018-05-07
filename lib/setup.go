@@ -16,6 +16,7 @@ import (
 
 // Initialise sets up the program's state
 func Initialise(s *State, ports string, wordlist string, statusCodesIgn string, protocols string, timeout int, AdvancedUsage bool) (errors *multierror.Error) {
+
 	s.Targets = make(chan Host)
 
 	if AdvancedUsage {
@@ -73,7 +74,7 @@ func Initialise(s *State, ports string, wordlist string, statusCodesIgn string, 
 
 		for _, port := range StrArrToInt(strings.Split(ports, ",")) {
 			if v := int(math.Pow(2, 16.0)); 0 > port || port >= v {
-				fmt.Printf("Port: (%v) is invalid!\n", port)
+				Error.Printf("Port: (%v) is invalid!\n", port)
 				continue
 			}
 			s.Ports.Add(port)
@@ -90,7 +91,7 @@ func Initialise(s *State, ports string, wordlist string, statusCodesIgn string, 
 		//  := <-c
 		if s.Debug {
 			for target := range targetList.Set {
-				fmt.Printf("Target: %v\n", target)
+				Debug.Printf("Target: %v\n", target)
 			}
 		}
 		s.Hosts = targetList
@@ -127,14 +128,20 @@ func Start(s State) {
 	ScanChan := make(chan Host)
 	DirbChan := make(chan Host)
 	ScreenshotChan := make(chan Host)
+	if s.Scan {
+		s.ScanOutputDirectory = path.Join(s.OutputDirectory, "portscan")
+		os.Mkdir(s.ScanOutputDirectory, 0755) // drwxr-xr-x
+	}
 	if s.Dirbust {
 		s.HTTPResponseDirectory = path.Join(s.OutputDirectory, "raw_http_response")
 		os.Mkdir(s.HTTPResponseDirectory, 0755) // drwxr-xr-x
+		s.DirbustOutputDirectory = path.Join(s.OutputDirectory, "dirbust")
+		os.Mkdir(s.DirbustOutputDirectory, 0755) // drwxr-xr-x
 	}
 	if s.Screenshot {
 		procs := make([]phantomjs.Process, s.NumPhantomProcs)
 		if s.Debug {
-			fmt.Printf("Creating [%v] PhantomJS processes... This could take a second\n", s.NumPhantomProcs)
+			Debug.Printf("Creating [%v] PhantomJS processes... This could take a second\n", s.NumPhantomProcs)
 		}
 		for i := 0; i < s.NumPhantomProcs; i++ {
 			procs[i] = phantomjs.Process{BinPath: s.PhantomJSPath,
@@ -146,14 +153,14 @@ func Start(s State) {
 			if err := procs[i].Open(); err != nil {
 				panic(err)
 			}
-			fmt.Printf("-> Phantomjs process: #[%v] (%v of %v) created on localhost:%v\n", i, i+1, s.NumPhantomProcs, phantomjs.DefaultPort+i)
+			Info.Printf("-> Phantomjs process: #[%v] (%v of %v) created on localhost:%v\n", i, i+1, s.NumPhantomProcs, phantomjs.DefaultPort+i)
 			defer procs[i].Close()
 		}
 		s.PhantomProcesses = procs
 		s.ScreenshotDirectory = path.Join(s.OutputDirectory, "screenshots")
 		os.Mkdir(s.ScreenshotDirectory, 0755) // drwxr-xr-x
 		if s.Debug {
-			fmt.Printf("Testing %v URLs\n", len(s.URLComponents)*len(s.Paths.Set))
+			Debug.Printf("Testing %v URLs\n", len(s.URLComponents)*len(s.Paths.Set))
 		}
 	}
 	wg := sync.WaitGroup{}
@@ -165,6 +172,6 @@ func Start(s State) {
 	reportFile := MarkdownReport(&s, ScreenshotChan)
 	wg.Wait()
 
-	fmt.Printf("Report written to: [%v]\n", reportFile)
+	Info.Printf("Report written to: [%v]\n", g.Sprintf("%s", reportFile))
 	fmt.Printf(LineSep())
 }
