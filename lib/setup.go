@@ -26,21 +26,17 @@ func Initialise(s *State, ports string, wordlist string, statusCodesIgn string, 
 			flag.PrintDefaults()
 			fmt.Printf(LineSep())
 			fmt.Printf("Examples for %s:\n", os.Args[0])
-			fmt.Printf(">> Scan and dirbust the hosts from hosts.txt.\n", os.Args[0])
-
+			fmt.Printf(">> Scan and dirbust the hosts from hosts.txt.\n")
 			fmt.Printf("%v -i hosts.txt -w wordlist.txt -t 2000 -scan -dirbust\n", os.Args[0])
-			fmt.Printf(">> Scan and dirbust the hosts from hosts.txt, and screenshot discovered web resources.\n", os.Args[0])
-
+			fmt.Printf(">> Scan and dirbust the hosts from hosts.txt, and screenshot discovered web resources.\n")
 			fmt.Printf("%v -i hosts.txt -w wordlist.txt -t 2000 -scan  -dirbust -screenshot\n", os.Args[0])
-			fmt.Printf(">> Scan, dirbust, and screenshot the hosts from hosts.txt on common web application ports. Additionally, set the number of phantomjs processes to 3.\n", os.Args[0])
-
+			fmt.Printf(">> Scan, dirbust, and screenshot the hosts from hosts.txt on common web application ports. Additionally, set the number of phantomjs processes to 3.\n")
 			fmt.Printf("%v -i hosts.txt -w wordlist.txt -t 2000 -p_procs=3 -p top -scan -dirbust -screenshot\n", os.Args[0])
-			fmt.Printf(">> Screenshot the URLs from urls.txt. Additionally, use a custom phantomjs path.\n", os.Args[0])
-
+			fmt.Printf(">> Screenshot the URLs from urls.txt. Additionally, use a custom phantomjs path.\n")
 			fmt.Printf("%v -U urls.txt -t 200 -j 400 -phantomjs /my/path/to/phantomjs -screenshot\n", os.Args[0])
-			fmt.Printf(">> Screenshot the supplied URL. Additionally, use a custom phantomjs path.\n", os.Args[0])
-
+			fmt.Printf(">> Screenshot the supplied URL. Additionally, use a custom phantomjs path.\n")
 			fmt.Printf("%v -u http://example.com/test -t 200 -j 400 -phantomjs /my/path/to/phantomjs -screenshot\n", os.Args[0])
+			fmt.Printf(LineSep())
 		}
 		Usage()
 		os.Exit(0)

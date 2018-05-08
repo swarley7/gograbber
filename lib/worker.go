@@ -49,7 +49,6 @@ func RoutineManager(s *State, ScanChan chan Host, DirbustChan chan Host, Screens
 			}
 		}()
 	}
-
 	wg.Add(1)
 	go func() {
 		defer func() {
