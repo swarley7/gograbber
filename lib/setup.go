@@ -3,7 +3,6 @@ package lib
 import (
 	"flag"
 	"fmt"
-	"math"
 	"os"
 	"path"
 	"strings"
@@ -71,14 +70,26 @@ func Initialise(s *State, ports string, wordlist string, statusCodesIgn string, 
 		return
 	}
 	if ports != "" {
-
-		for _, port := range StrArrToInt(strings.Split(ports, ",")) {
-			if v := int(math.Pow(2, 16.0)); 0 > port || port >= v {
-				Error.Printf("Port: (%v) is invalid!\n", port)
-				continue
-			}
-			s.Ports.Add(port)
+		if strings.ToLower(ports) == "full" {
+			ports = full
+		} else if strings.ToLower(ports) == "med" {
+			ports = medium
+		} else if strings.ToLower(ports) == "small" {
+			ports = small
+		} else if strings.ToLower(ports) == "large" {
+			ports = large
+		} else if strings.ToLower(ports) == "top" {
+			ports = top
 		}
+		s.Ports = UnpackPortString(ports)
+		// for _, port := range StrArrToInt(strings.Split(ports, ",")) {
+		// 	if v := int(math.Pow(2, 16.0)); 0 > port || port >= v {
+		// 		Error.Printf("Port: (%v) is invalid!\n", port)
+		// 		continue
+		// 	}
+		// 	s.Ports.Add(port)
+
+		// }
 
 	}
 	if s.InputFile != "" {

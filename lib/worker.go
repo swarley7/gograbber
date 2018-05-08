@@ -104,61 +104,69 @@ func RoutineManager(s *State, ScanChan chan Host, DirbustChan chan Host, Screens
 		var fuggoff bool
 		// Do dirbusting
 		for host := range ScanChan {
-			fuggoff = false
-			if !s.URLProvided && !host.PrefetchDoneCheck(s.PrefetchedHosts) {
-				host, err = Prefetch(host, s.Debug, s.Jitter, s.Protocols)
-				if err != nil {
-					fuggoff = true
-				}
-				if host.Protocol == "" {
-					fuggoff = true
-				}
-				s.PrefetchedHosts[host.PrefetchHash()] = true
-			}
-			if s.Soft404Detection && !host.Soft404DoneCheck(s.Soft404edHosts) {
-				randURL := fmt.Sprintf("%v://%v:%v/%v", host.Protocol, host.HostAddr, host.Port, RandString(16))
-				// fmt.Printf("Soft404 checking [%v]\n", randURL)
-				randResp, err := cl.Get(randURL)
-				if err != nil {
-					fuggoff = true
-					continue
-					// panic(err)
-				}
-				data, err := ioutil.ReadAll(randResp.Body)
-				if err != nil {
-					// panic(err)
-					fuggoff = true
-					continue
-				}
-				randResp.Body.Close()
-				host.Soft404RandomURL = randURL
-				host.Soft404RandomPageContents = strings.Split(string(data), " ")
-				s.Soft404edHosts[host.Soft404Hash()] = true
-			}
-			if fuggoff {
-				continue
-			}
-			var dirbustOutFile string
-			dWriteChan := make(chan []byte)
+			dirbWg.Add(1)
+			go func() {
+				defer dirbWg.Done()
+				var xwg = sync.WaitGroup{}
 
-			if s.ProjectName != "" {
-				dirbustOutFile = fmt.Sprintf("%v/urls_%v_%v_%v.txt", s.DirbustOutputDirectory, strings.ToLower(strings.Replace(s.ProjectName, " ", "_", -1)), currTime, rand.Int63())
-			} else {
-				dirbustOutFile = fmt.Sprintf("%v/urls_%v_%v_%v.txt", s.DirbustOutputDirectory, currTime, rand.Int63())
-			}
-			go writerWorker(dWriteChan, dirbustOutFile)
+				fuggoff = false
+				if !s.URLProvided && !host.PrefetchDoneCheck(s.PrefetchedHosts) {
+					host, err = Prefetch(host, s.Debug, s.Jitter, s.Protocols)
+					if err != nil {
+						fuggoff = true
+					}
+					if host.Protocol == "" {
+						fuggoff = true
+					}
+					s.PrefetchedHosts[host.PrefetchHash()] = true
+				}
+				if s.Soft404Detection && !host.Soft404DoneCheck(s.Soft404edHosts) {
+					randURL := fmt.Sprintf("%v://%v:%v/%v", host.Protocol, host.HostAddr, host.Port, RandString(16))
+					// fmt.Printf("Soft404 checking [%v]\n", randURL)
+					randResp, err := cl.Get(randURL)
+					if err != nil {
+						fuggoff = true
+						return
+						// panic(err)
+					}
+					data, err := ioutil.ReadAll(randResp.Body)
+					if err != nil {
+						// panic(err)
+						fuggoff = true
+						return
+					}
+					randResp.Body.Close()
+					host.Soft404RandomURL = randURL
+					host.Soft404RandomPageContents = strings.Split(string(data), " ")
+					s.Soft404edHosts[host.Soft404Hash()] = true
+				}
+				if fuggoff {
+					return
+				}
+				var dirbustOutFile string
+				dWriteChan := make(chan []byte)
 
-			if !s.URLProvided {
-				for path, _ := range s.Paths.Set {
+				if s.ProjectName != "" {
+					dirbustOutFile = fmt.Sprintf("%v/urls_%v_%v_%v.txt", s.DirbustOutputDirectory, strings.ToLower(strings.Replace(s.ProjectName, " ", "_", -1)), currTime, rand.Int63())
+				} else {
+					dirbustOutFile = fmt.Sprintf("%v/urls_%v_%v_%v.txt", s.DirbustOutputDirectory, currTime, rand.Int63())
+				}
+				go writerWorker(dWriteChan, dirbustOutFile)
+
+				if !s.URLProvided {
+					for path, _ := range s.Paths.Set {
+						threadChan <- struct{}{}
+						xwg.Add(1)
+						go HTTPGetter(&xwg, host, s.Debug, s.Jitter, s.Soft404Detection, s.StatusCodesIgn, s.Ratio, path, DirbustChan, threadChan, s.ProjectName, s.HTTPResponseDirectory, dWriteChan)
+					}
+				} else {
 					threadChan <- struct{}{}
-					dirbWg.Add(1)
-					go HTTPGetter(&dirbWg, host, s.Debug, s.Jitter, s.Soft404Detection, s.StatusCodesIgn, s.Ratio, path, DirbustChan, threadChan, s.ProjectName, s.HTTPResponseDirectory, dWriteChan)
+					xwg.Add(1)
+					go HTTPGetter(&xwg, host, s.Debug, s.Jitter, s.Soft404Detection, s.StatusCodesIgn, s.Ratio, host.Path, DirbustChan, threadChan, s.ProjectName, s.HTTPResponseDirectory, dWriteChan)
 				}
-			} else {
-				threadChan <- struct{}{}
-				dirbWg.Add(1)
-				go HTTPGetter(&dirbWg, host, s.Debug, s.Jitter, s.Soft404Detection, s.StatusCodesIgn, s.Ratio, host.Path, DirbustChan, threadChan, s.ProjectName, s.HTTPResponseDirectory, dWriteChan)
-			}
+				xwg.Wait()
+			}()
+
 		}
 		dirbWg.Wait()
 	}()

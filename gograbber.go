@@ -33,7 +33,7 @@ func parseCMDLine() *lib.State {
 	flag.BoolVar(&s.Scan, "scan", false, "Enable host discovery/TCP port scanner")
 
 	flag.StringVar(&s.InputFile, "i", "", "Input filename of line seperated targets (hosts, IPs, CIDR ranges)")
-	flag.StringVar(&ports, "p", "80", "Comma-separated ports to test with port scanner or directory bruteforce. Predefined port ranges are defined by 'small', 'med', 'large', 'full'")
+	flag.StringVar(&ports, "p", "80,443", "Comma-separated ports to test with port scanner or directory bruteforce. Predefined port ranges are defined by 'top', 'small', 'med', 'large', 'full'")
 
 	// I am very drunk right now
 
