@@ -33,7 +33,7 @@ func parseCMDLine() *lib.State {
 	flag.BoolVar(&s.Scan, "scan", false, "Enable host discovery/TCP port scanner")
 
 	flag.StringVar(&s.InputFile, "i", "", "Input filename of line seperated targets (hosts, IPs, CIDR ranges)")
-	flag.StringVar(&ports, "p", "80,443", "Comma-separated ports to test with port scanner or directory bruteforce. Predefined port ranges are defined by 'top', 'small', 'med', 'large', 'full'")
+	flag.StringVar(&ports, "p", "80,443", "Comma-separated ports/ranges to test with port scanner or directory bruteforce. Predefined port ranges are defined by 'top', 'small', 'med', 'large', 'full'")
 
 	// I am very drunk right now
 
@@ -69,15 +69,18 @@ func parseCMDLine() *lib.State {
 	flag.Parse()
 	lib.InitColours()
 	lib.PrintBanner(&s)
+
+	if s.Debug {
+		go func() {
+			lib.Debug.Println("Profiler running on: localhost:6060")
+			http.ListenAndServe("localhost:6060", nil)
+		}()
+	}
 	if err := lib.Initialise(&s, ports, wordlist, statusCodesIgn, protocols, timeout, AdvancedUsage); err.ErrorOrNil() != nil {
 		lib.Error.Printf("%s\n", err.Error())
 		return nil
 	}
-	if s.Debug {
-		go func() {
-			lib.Debug.Println(http.ListenAndServe("localhost:6060", nil))
-		}()
-	}
+
 	return &s
 }
 

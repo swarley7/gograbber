@@ -26,7 +26,21 @@ func Initialise(s *State, ports string, wordlist string, statusCodesIgn string, 
 			flag.PrintDefaults()
 			fmt.Printf(LineSep())
 			fmt.Printf("Examples for %s:\n", os.Args[0])
-			fmt.Println()
+			fmt.Printf(">> Scan and dirbust the hosts from hosts.txt.\n", os.Args[0])
+
+			fmt.Printf("%v -i hosts.txt -w wordlist.txt -t 2000 -scan -dirbust\n", os.Args[0])
+			fmt.Printf(">> Scan and dirbust the hosts from hosts.txt, and screenshot discovered web resources.\n", os.Args[0])
+
+			fmt.Printf("%v -i hosts.txt -w wordlist.txt -t 2000 -scan  -dirbust -screenshot\n", os.Args[0])
+			fmt.Printf(">> Scan, dirbust, and screenshot the hosts from hosts.txt on common web application ports. Additionally, set the number of phantomjs processes to 3.\n", os.Args[0])
+
+			fmt.Printf("%v -i hosts.txt -w wordlist.txt -t 2000 -p_procs=3 -p top -scan -dirbust -screenshot\n", os.Args[0])
+			fmt.Printf(">> Screenshot the URLs from urls.txt. Additionally, use a custom phantomjs path.\n", os.Args[0])
+
+			fmt.Printf("%v -U urls.txt -t 200 -j 400 -phantomjs /my/path/to/phantomjs -screenshot\n", os.Args[0])
+			fmt.Printf(">> Screenshot the supplied URL. Additionally, use a custom phantomjs path.\n", os.Args[0])
+
+			fmt.Printf("%v -u http://example.com/test -t 200 -j 400 -phantomjs /my/path/to/phantomjs -screenshot\n", os.Args[0])
 		}
 		Usage()
 		os.Exit(0)
@@ -37,6 +51,11 @@ func Initialise(s *State, ports string, wordlist string, statusCodesIgn string, 
 	cl.Timeout = s.Timeout
 
 	s.URLProvided = false
+	if s.URLFile != "" || s.SingleURL != "" {
+		s.URLProvided = true
+		s.Scan = false
+	}
+
 	if wordlist != "" {
 		pathData, err := GetDataFromFile(wordlist)
 		if err != nil {
@@ -47,28 +66,31 @@ func Initialise(s *State, ports string, wordlist string, statusCodesIgn string, 
 			s.Paths.Add(path)
 		}
 	}
-	if s.URLFile != "" || s.SingleURL != "" { // A url and/or file full of urls was supplied - treat them as gospel
-		s.URLProvided = true
-		if s.URLFile != "" {
-			s.Scan = false
-			inputData, err := GetDataFromFile(s.URLFile)
-			if err != nil {
-				panic(err)
-			}
 
-			for _, item := range inputData {
-				// s.URLComponents
-				ParseURLToHost(item, s.Targets)
+	if s.URLProvided { // A url and/or file full of urls was supplied - treat them as gospel
 
+		go func() { // for reasons unknown this seems to work ok... other things dont. I don't understand computers
+			defer close(s.Targets)
+			if s.URLFile != "" {
+				inputData, err := GetDataFromFile(s.URLFile)
+				if err != nil {
+					Error.Println(err)
+					panic(err)
+				}
+				for _, item := range inputData {
+					// s.URLComponents
+					ParseURLToHost(item, s.Targets)
+				}
 			}
-		}
-		if s.SingleURL != "" {
-			ParseURLToHost(s.SingleURL, s.Targets)
-		}
-		// close(s.Targets)
-		s.Scan = false
+			if s.SingleURL != "" {
+				s.URLProvided = true
+				Info.Println(s.SingleURL)
+				ParseURLToHost(s.SingleURL, s.Targets)
+			}
+		}()
 		return
 	}
+
 	if ports != "" {
 		if strings.ToLower(ports) == "full" {
 			ports = full

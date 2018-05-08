@@ -13,6 +13,7 @@ A horizontal and vertical web content enumerator by swarley7 (@swarley777)
 `gograbber` attempts to solve these problems!
 - Supply a list of urls, hosts, ip addresses, CIDR ranges, ports, web paths, whatever... and `gograbber` will attempt to discover stuff there.
 - Screenshot discovered content! (can be tuned to prevent excessive output)
+- output is greppable
 
 # TODO
 

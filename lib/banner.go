@@ -21,8 +21,8 @@ $$\   $$ |          $$\   $$ |
 \$$$$$$  |          \$$$$$$  |                                                           
  \______/            \______/`
 
-	var version = "0.1a"
-	var author = "swarley (@swarley777)"
+	var version = "Alpha (0.1a)"
+	var author = "Clinton \"swarley\" Carpene (@swarley777)"
 
 	if s.VerbosityLevel > 0 {
 		// g := color.New(color.FgGreen, color.Bold)

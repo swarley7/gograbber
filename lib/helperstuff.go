@@ -370,7 +370,7 @@ func ParseURLToHost(URL string, targets chan Host) {
 			return
 		}
 	}
-	path := URLObj.RawQuery
+	path := URLObj.EscapedPath()
 	targets <- Host{HostAddr: URLObj.Hostname(), Path: path, Protocol: URLObj.Scheme, Port: Port}
 }
 
@@ -423,8 +423,6 @@ func UnpackPortString(ports string) (ProcessedPorts IntSet) {
 		} else {
 
 			for _, i := range x {
-				Warning.Printf("ygh = %v\n", x)
-
 				if i > 0 || i < 65536 {
 					ProcessedPorts.Add(i)
 				}
