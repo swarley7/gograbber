@@ -109,7 +109,7 @@ func RoutineManager(s *State, ScanChan chan Host, DirbustChan chan Host, Screens
 				var xwg = sync.WaitGroup{}
 
 				fuggoff = false
-				if !s.URLProvided && !host.PrefetchDoneCheck(s.PrefetchedHosts) {
+				if !s.URLProvided {
 					host, err = Prefetch(host, s.Debug, s.Jitter, s.Protocols)
 					if err != nil {
 						fuggoff = true
@@ -117,9 +117,8 @@ func RoutineManager(s *State, ScanChan chan Host, DirbustChan chan Host, Screens
 					if host.Protocol == "" {
 						fuggoff = true
 					}
-					s.PrefetchedHosts[host.PrefetchHash()] = true
 				}
-				if s.Soft404Detection && !host.Soft404DoneCheck(s.Soft404edHosts) {
+				if s.Soft404Detection {
 					randURL := fmt.Sprintf("%v://%v:%v/%v", host.Protocol, host.HostAddr, host.Port, RandString(16))
 					// fmt.Printf("Soft404 checking [%v]\n", randURL)
 					randResp, err := cl.Get(randURL)
@@ -137,7 +136,6 @@ func RoutineManager(s *State, ScanChan chan Host, DirbustChan chan Host, Screens
 					randResp.Body.Close()
 					host.Soft404RandomURL = randURL
 					host.Soft404RandomPageContents = strings.Split(string(data), " ")
-					s.Soft404edHosts[host.Soft404Hash()] = true
 				}
 				if fuggoff {
 					return

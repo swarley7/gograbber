@@ -21,7 +21,7 @@ func ConnectHost(wg *sync.WaitGroup, timeout time.Duration, Jitter int, Debug bo
 	if err == nil {
 		Good.Printf("%v:%v - %v\n", host.HostAddr, host.Port, g.Sprintf("tcp/%v open", host.Port))
 		conn.Close()
-		writeChan <- []byte(fmt.Sprintf("%v:%v\n", host.HostAddr, host.Port))
+		// writeChan <- []byte(fmt.Sprintf("%v:%v\n", host.HostAddr, host.Port))
 		results <- host
 	}
 }

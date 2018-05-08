@@ -112,7 +112,7 @@ func HTTPGetter(wg *sync.WaitGroup, host Host, debug bool, Jitter int, soft404De
 		}
 	}
 	host.Path = path
-	writeChan <- []byte(fmt.Sprintf("%v\n", url))
+	// writeChan <- []byte(fmt.Sprintf("%v\n", url))
 	results <- host
 }
 
