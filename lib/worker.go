@@ -106,7 +106,7 @@ func RoutineManager(s *State, ScanChan chan Host, DirbustChan chan Host, Screens
 		for host := range ScanChan {
 			fuggoff = false
 			if !s.URLProvided && !host.PrefetchDoneCheck(s.PrefetchedHosts) {
-				host, err = Prefetch(host, s)
+				host, err = Prefetch(host, s.Debug, s.Jitter, s.Protocols)
 				if err != nil {
 					fuggoff = true
 				}
@@ -141,13 +141,13 @@ func RoutineManager(s *State, ScanChan chan Host, DirbustChan chan Host, Screens
 			var dirbustOutFile string
 			dWriteChan := make(chan []byte)
 
-			go writerWorker(dWriteChan, dirbustOutFile)
-
 			if s.ProjectName != "" {
 				dirbustOutFile = fmt.Sprintf("%v/urls_%v_%v_%v.txt", s.DirbustOutputDirectory, strings.ToLower(strings.Replace(s.ProjectName, " ", "_", -1)), currTime, rand.Int63())
 			} else {
 				dirbustOutFile = fmt.Sprintf("%v/urls_%v_%v_%v.txt", s.DirbustOutputDirectory, currTime, rand.Int63())
 			}
+			go writerWorker(dWriteChan, dirbustOutFile)
+
 			if !s.URLProvided {
 				for path, _ := range s.Paths.Set {
 					threadChan <- struct{}{}

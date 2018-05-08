@@ -15,12 +15,12 @@ import (
 
 // checks to see whether host is http/s or other scheme.
 // Returns error if endpoint is not a valid webserver. Prevents
-func Prefetch(host Host, s *State) (h Host, err error) {
+func Prefetch(host Host, debug bool, jitter int, protocols StringSet) (h Host, err error) {
 	var url string
-	for scheme := range s.Protocols.Set {
-		ApplyJitter(s.Jitter)
+	for scheme := range protocols.Set {
+		ApplyJitter(jitter)
 		url = fmt.Sprintf("%v://%v:%v", scheme, host.HostAddr, host.Port)
-		if s.Debug {
+		if debug {
 			Debug.Printf("Prefetch URL: %v\n", url)
 		}
 		resp, err := cl.Get(url)
@@ -53,6 +53,7 @@ func HTTPGetter(wg *sync.WaitGroup, host Host, debug bool, Jitter int, soft404De
 		<-threads
 		wg.Done()
 	}()
+
 	if strings.HasPrefix(path, "/") && len(path) > 0 {
 		path = path[1:] // strip preceding '/' char
 	}
@@ -79,7 +80,7 @@ func HTTPGetter(wg *sync.WaitGroup, host Host, debug bool, Jitter int, soft404De
 		soft404Ratio := detectSoft404(host.HTTPResp, host.Soft404RandomPageContents)
 		if soft404Ratio > Ratio {
 			if debug {
-				Debug.Printf("[%v] is very similar to [%v] (%.4f%% match)\n", url, host.Soft404RandomURL, (soft404Ratio * 100))
+				Debug.Printf("[%v] is very similar to [%v] (%v match)\n", y.Sprintf("%s", url), y.Sprintf("%s", host.Soft404RandomURL), y.Sprintf("%.4f%%", (soft404Ratio*100)))
 			}
 			return
 		}
@@ -111,8 +112,8 @@ func HTTPGetter(wg *sync.WaitGroup, host Host, debug bool, Jitter int, soft404De
 		}
 	}
 	host.Path = path
-	results <- host
 	writeChan <- []byte(fmt.Sprintf("%v\n", url))
+	results <- host
 }
 
 func detectSoft404(resp *http.Response, randRespData []string) (ratio float64) {
