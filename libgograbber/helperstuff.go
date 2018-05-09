@@ -3,7 +3,6 @@ package libgograbber
 import (
 	"bufio"
 	"crypto/sha1"
-	"crypto/tls"
 	"fmt"
 	"io"
 	"log"
@@ -106,23 +105,18 @@ func InitLogger(
 	debugHandle io.Writer,
 	warningHandle io.Writer,
 	errorHandle io.Writer) {
-	// g := color.New(color.FgGreen, color.Bold)
-	// y := color.New(color.FgYellow, color.Bold)
-	// r := color.New(color.FgRed, color.Bold)
-	// m := color.New(color.FgMagenta, color.Bold)
-	// b := color.New(color.FgBlue, color.Bold)
 
 	Good = log.New(goodHandle,
 		g.Sprintf("GOOD: "),
-		log.Ldate|log.Ltime|log.Lshortfile)
+		log.Ldate|log.Ltime)
 
 	Info = log.New(infoHandle,
 		b.Sprintf("INFO: "),
-		log.Ldate|log.Ltime|log.Lshortfile)
+		log.Ldate|log.Ltime)
 
 	Debug = log.New(debugHandle,
 		y.Sprintf("DEBUG: "),
-		log.Ldate|log.Ltime|log.Lshortfile)
+		log.Ldate|log.Ltime)
 
 	Warning = log.New(warningHandle,
 		m.Sprintf("WARNING: "),
@@ -137,21 +131,9 @@ var d = net.Dialer{
 	Timeout:   500 * time.Millisecond,
 	KeepAlive: 0,
 }
-var tx = &http.Transport{
-	DialContext:           (d).DialContext,
-	TLSHandshakeTimeout:   2 * time.Second,
-	MaxIdleConns:          100, //This could potentially be dropped to 1, we aren't going to hit the same server more than once ever
-	IdleConnTimeout:       1 * time.Second,
-	ExpectContinueTimeout: 1 * time.Second,
-	DisableKeepAlives:     true, //keep things alive if possible - reuse connections
-	DisableCompression:    true,
-	TLSClientConfig:       &tls.Config{InsecureSkipVerify: true},
-}
+var tx = &http.Transport{}
 
-var cl = http.Client{
-	Transport: tx,
-	Timeout:   1 * time.Second,
-}
+var cl = http.Client{}
 
 func ApplyJitter(Jitter int) {
 	if Jitter > 0 {

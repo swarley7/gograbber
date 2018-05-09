@@ -102,6 +102,16 @@ func RoutineManager(s *State, ScanChan chan Host, DirbustChan chan Host, Screens
 		}
 		var fuggoff bool
 		// Do dirbusting
+		var dirbustOutFile string
+
+		dWriteChan := make(chan []byte)
+
+		if s.ProjectName != "" {
+			dirbustOutFile = fmt.Sprintf("%v/urls_%v_%v_%v.txt", s.DirbustOutputDirectory, strings.ToLower(strings.Replace(s.ProjectName, " ", "_", -1)), currTime, rand.Int63())
+		} else {
+			dirbustOutFile = fmt.Sprintf("%v/urls_%v_%v_%v.txt", s.DirbustOutputDirectory, currTime, rand.Int63())
+		}
+		go writerWorker(dWriteChan, dirbustOutFile)
 		for host := range ScanChan {
 			dirbWg.Add(1)
 			go func() {
@@ -140,15 +150,6 @@ func RoutineManager(s *State, ScanChan chan Host, DirbustChan chan Host, Screens
 				if fuggoff {
 					return
 				}
-				var dirbustOutFile string
-				dWriteChan := make(chan []byte)
-
-				if s.ProjectName != "" {
-					dirbustOutFile = fmt.Sprintf("%v/urls_%v_%v_%v.txt", s.DirbustOutputDirectory, strings.ToLower(strings.Replace(s.ProjectName, " ", "_", -1)), currTime, rand.Int63())
-				} else {
-					dirbustOutFile = fmt.Sprintf("%v/urls_%v_%v_%v.txt", s.DirbustOutputDirectory, currTime, rand.Int63())
-				}
-				go writerWorker(dWriteChan, dirbustOutFile)
 
 				if !s.URLProvided {
 					for path, _ := range s.Paths.Set {

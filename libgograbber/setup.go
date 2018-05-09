@@ -1,8 +1,10 @@
 package libgograbber
 
 import (
+	"crypto/tls"
 	"flag"
 	"fmt"
+	"net/http"
 	"os"
 	"path"
 	"strings"
@@ -14,9 +16,7 @@ import (
 )
 
 // Initialise sets up the program's state
-func Initialise(s *State, ports string, wordlist string, statusCodesIgn string, protocols string, timeout int, AdvancedUsage bool) (errors *multierror.Error) {
-
-	s.Targets = make(chan Host)
+func Initialise(s *State, ports string, wordlist string, statusCodesIgn string, protocols string, timeout int, AdvancedUsage bool, easy bool) (errors *multierror.Error) {
 
 	if AdvancedUsage {
 
@@ -36,15 +36,43 @@ func Initialise(s *State, ports string, wordlist string, statusCodesIgn string, 
 			fmt.Printf("%v -U urls.txt -t 200 -j 400 -phantomjs /my/path/to/phantomjs -screenshot\n", os.Args[0])
 			fmt.Printf(">> Screenshot the supplied URL. Additionally, use a custom phantomjs path.\n")
 			fmt.Printf("%v -u http://example.com/test -t 200 -j 400 -phantomjs /my/path/to/phantomjs -screenshot\n", os.Args[0])
+			fmt.Printf(">> EASY MODE/I DON'T WANT TO READ STUFF LEMME HACK OK?.\n")
+			fmt.Printf("%v -i hosts.txt -w wordlist.txt -easy\n", os.Args[0])
+
 			fmt.Printf(LineSep())
 		}
 		Usage()
 		os.Exit(0)
 	}
-	s.PrefetchedHosts = map[string]bool{}
-	s.Soft404edHosts = map[string]bool{}
+	if easy { // user wants to use easymode... lol?
+		s.Timeout = 2
+		s.Jitter = 25
+		s.Scan = true
+		s.Dirbust = true
+		s.Screenshot = true
+		s.Threads = 1000
+		s.NumPhantomProcs = 7
+		ports = "top"
+	}
+
+	// s.PrefetchedHosts = map[string]bool{}
+	// s.Soft404edHosts = map[string]bool{}
 	s.Timeout = time.Duration(timeout) * time.Second
-	cl.Timeout = s.Timeout
+
+	tx = &http.Transport{
+		DialContext:           (d).DialContext,
+		TLSHandshakeTimeout:   s.Timeout,
+		MaxIdleConns:          100, //This could potentially be dropped to 1, we aren't going to hit the same server more than once ever
+		IdleConnTimeout:       s.Timeout,
+		ExpectContinueTimeout: s.Timeout,
+		DisableKeepAlives:     true, //keep things alive if possible - reuse connections
+		DisableCompression:    true,
+		TLSClientConfig:       &tls.Config{InsecureSkipVerify: true}}
+	cl = http.Client{
+		Transport: tx,
+		Timeout:   s.Timeout,
+	}
+	s.Targets = make(chan Host)
 
 	s.URLProvided = false
 	if s.URLFile != "" || s.SingleURL != "" {
