@@ -2,14 +2,14 @@ package main
 
 import (
 	"flag"
-	"gograbber/lib"
+	"gograbber/libgograbber"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
 )
 
-func parseCMDLine() *lib.State {
-	s := lib.State{Ports: lib.IntSet{Set: map[int]bool{}}}
+func parseCMDLine() *libgograbber.State {
+	s := libgograbber.State{Ports: libgograbber.IntSet{Set: map[int]bool{}}}
 	var ports string
 	var wordlist string
 	var statusCodesIgn string
@@ -17,7 +17,7 @@ func parseCMDLine() *lib.State {
 	var protocols string
 	var timeout int
 	var AdvancedUsage bool
-	lib.InitLogger(os.Stdout, os.Stdout, os.Stdout, os.Stdout, os.Stderr)
+	libgograbber.InitLogger(os.Stdout, os.Stdout, os.Stdout, os.Stdout, os.Stderr)
 
 	// Commandline arguments
 	// Global
@@ -67,17 +67,17 @@ func parseCMDLine() *lib.State {
 	flag.BoolVar(&s.IgnoreSSLErrors, "k", true, "Ignore SSL/TLS cert validation errors (super secure amirite?). Look, if you're using this app you probably know the risks, and let's face it, dgaf.")
 
 	flag.Parse()
-	lib.InitColours()
-	lib.PrintBanner(&s)
+	libgograbber.InitColours()
+	libgograbber.PrintBanner(&s)
 
 	if s.Debug {
 		go func() {
-			lib.Debug.Println("Profiler running on: localhost:6060")
+			libgograbber.Debug.Println("Profiler running on: localhost:6060")
 			http.ListenAndServe("localhost:6060", nil)
 		}()
 	}
-	if err := lib.Initialise(&s, ports, wordlist, statusCodesIgn, protocols, timeout, AdvancedUsage); err.ErrorOrNil() != nil {
-		lib.Error.Printf("%s\n", err.Error())
+	if err := libgograbber.Initialise(&s, ports, wordlist, statusCodesIgn, protocols, timeout, AdvancedUsage); err.ErrorOrNil() != nil {
+		libgograbber.Error.Printf("%s\n", err.Error())
 		return nil
 	}
 
@@ -91,6 +91,6 @@ func main() {
 	// lib.PrintOpts(state)
 	if state != nil {
 		// dothething awww ye
-		lib.Start(*state)
+		libgograbber.Start(*state)
 	}
 }
