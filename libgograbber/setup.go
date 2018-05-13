@@ -54,22 +54,15 @@ func Initialise(s *State, ports string, wordlist string, statusCodesIgn string, 
 		ports = "top"
 	}
 
-	// s.PrefetchedHosts = map[string]bool{}
-	// s.Soft404edHosts = map[string]bool{}
 	s.Timeout = time.Duration(timeout) * time.Second
 
 	tx = &http.Transport{
-		DialContext: (d).DialContext,
-		// TLSHandshakeTimeout:   s.Timeout * 2,
-		MaxIdleConns: 100, //This could potentially be dropped to 1, we aren't going to hit the same server more than once ever
-		// IdleConnTimeout:       s.Timeout * 2,
-		// ExpectContinueTimeout: s.Timeout * 2,
-		// DisableKeepAlives:     true, //keep things alive if possible - reuse connections
+		DialContext:        (d).DialContext,
 		DisableCompression: true,
 		TLSClientConfig:    &tls.Config{InsecureSkipVerify: s.IgnoreSSLErrors}}
 	cl = http.Client{
 		Transport: tx,
-		// Timeout:   15 * time.Second,
+		Timeout:   s.Timeout,
 	}
 	// if s.FollowRedirect {
 	// 	cl.CheckRedirect = func(req *http.Request, via []*http.Request) error {

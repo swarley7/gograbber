@@ -13,37 +13,36 @@ import (
 	"github.com/pmezard/go-difflib/difflib"
 )
 
-// checks to see whether host is http/s or other scheme.
-// Returns error if endpoint is not a valid webserver. Prevents
-func Prefetch(host Host, debug bool, jitter int, protocols StringSet) (h Host, err error) {
-	var Url string
-	var scheme string
-	for scheme = range protocols.Set {
-		ApplyJitter(jitter)
-		Url = fmt.Sprintf("%v://%v:%v", scheme, host.HostAddr, host.Port)
-		if debug {
-			Debug.Printf("Prefetch URL: %v\n", Url)
-		}
-		resp, err := cl.Get(Url)
-		// resp.Body.Close()
-		if err != nil {
-			if strings.Contains(err.Error(), "http: server gave HTTP response to HTTPS client") {
-				host.Protocol = "http" // we know it's a http port now
-				return host, nil
-			} else {
-				Debug.Printf("Prefetch error: %v [%v]\n", err, Url)
-
-			}
-			continue
-		} else {
-			host.Protocol = scheme
-			resp.Body.Close()
-			return host, nil
-		}
-	}
-	host.Protocol = scheme
-	return host, nil
-}
+// // checks to see whether host is http/s or other scheme.
+// // Returns error if endpoint is not a valid webserver. Prevents
+// func Prefetch(host Host, debug bool, jitter int, protocols StringSet) (h Host, err error) {
+// 	var Url string
+// 	var scheme string
+// 	for scheme = range protocols.Set {
+// 		ApplyJitter(jitter)
+// 		Url = fmt.Sprintf("%v://%v:%v", scheme, host.HostAddr, host.Port)
+// 		if debug {
+// 			Debug.Printf("Prefetch URL: %v\n", Url)
+// 		}
+// 		req, _ := http.NewRequest("GET", Url, nil)
+// 		resp, err := cl.Do(req)
+// 		// resp.Body.Close()
+// 		if err != nil {
+// 			if strings.Contains(err.Error(), "http: server gave HTTP response to HTTPS client") {
+// 				host.Protocol = "http" // we know it's a http port now
+// 				return host, nil
+// 			}
+// 		} else if resp.StatusCode > 0 {
+// 			Warning.Printf(" HEERER %v - %v: scheme: %v\n", resp.Status, resp.StatusCode, scheme)
+// 			host.Protocol = scheme
+// 			resp.Body.Close()
+// 			return host, nil
+// 		}
+// 	}
+// 	Warning.Printf("%v\n", scheme)
+// 	host.Protocol = scheme
+// 	return host, nil
+// }
 
 func HTTPGetter(wg *sync.WaitGroup, host Host, debug bool, Jitter int, soft404Detection bool, statusCodesIgn IntSet, Ratio float64, path string, results chan Host, threads chan struct{}, ProjectName string, responseDirectory string, writeChan chan []byte, hostHeader string, followRedirects bool) {
 	defer func() {
@@ -110,9 +109,9 @@ func HTTPGetter(wg *sync.WaitGroup, host Host, debug bool, Jitter int, soft404De
 		t.Hour(), t.Minute(), t.Second())
 	var responseFilename string
 	if ProjectName != "" {
-		responseFilename = fmt.Sprintf("%v/%v_%v_%v_%v-%v_%v.html", responseDirectory, strings.ToLower(SanitiseFilename(ProjectName)), host.Protocol, host.HostAddr, host.Port, currTime, rand.Int63())
+		responseFilename = fmt.Sprintf("%v/%v_%v-%v_%v.png", responseDirectory, strings.ToLower(SanitiseFilename(ProjectName)), SanitiseFilename(Url), currTime, rand.Int63())
 	} else {
-		responseFilename = fmt.Sprintf("%v/%v_%v_%v-%v_%v.html", responseDirectory, host.Protocol, host.HostAddr, host.Port, currTime, rand.Int63())
+		responseFilename = fmt.Sprintf("%v/%v-%v_%v.png", responseDirectory, SanitiseFilename(Url), currTime, rand.Int63())
 	}
 	file, err := os.Create(responseFilename)
 	if err != nil {

@@ -8,12 +8,12 @@ import (
 )
 
 // connectHost does the actual TCP connection
-func ConnectHost(wg *sync.WaitGroup, timeout time.Duration, Jitter int, Debug bool, host Host, results chan Host, threads chan struct{}, writeChan chan []byte) {
+func ConnectHost(wg *sync.WaitGroup, timeout time.Duration, Jitter int, debug bool, host Host, results chan Host, threads chan struct{}, writeChan chan []byte) {
 	defer func() {
 		<-threads
 		wg.Done()
 	}()
-	if Debug {
+	if debug {
 		Info.Printf("Port scanning: %v:%v\n", host.HostAddr, host.Port)
 	}
 	ApplyJitter(Jitter)
@@ -23,5 +23,7 @@ func ConnectHost(wg *sync.WaitGroup, timeout time.Duration, Jitter int, Debug bo
 		conn.Close()
 		writeChan <- []byte(fmt.Sprintf("%v,%v\n", host.HostAddr, host.Port))
 		results <- host
+	} else {
+		Debug.Printf("Err: %v\n", err)
 	}
 }
