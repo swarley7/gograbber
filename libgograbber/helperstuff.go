@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/fatih/color"
+	"github.com/google/uuid"
 )
 
 // Get yo colours sorted
@@ -127,10 +128,7 @@ func InitLogger(
 		log.Ldate|log.Ltime|log.Lshortfile)
 }
 
-var d = net.Dialer{
-	Timeout:   500 * time.Millisecond,
-	KeepAlive: 0,
-}
+var d = net.Dialer{}
 var tx = &http.Transport{}
 
 var cl = http.Client{}
@@ -378,7 +376,7 @@ func StringWithCharset(length int, charset string) string {
 }
 
 func RandString(length int) string {
-	return StringWithCharset(length, charset)
+	return fmt.Sprintf("%v", uuid.New())
 }
 
 func UnpackPortString(ports string) (ProcessedPorts IntSet) {

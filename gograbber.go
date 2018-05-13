@@ -41,7 +41,7 @@ func parseCMDLine() *libgograbber.State {
 
 	// Dirbust related
 	flag.BoolVar(&s.Dirbust, "dirbust", false, "Perform dirbust-like directory brute force of hosts using provided wordlist")
-
+	flag.StringVar(&s.HostHeader, "H", "", "Optional: Supply a custom host header (maybe for bypassing WAF/CDN garbage?)")
 	flag.StringVar(&protocols, "P", "http,https", "If provided, each host will be tested for the given protocol")
 	flag.StringVar(&statusCodesIgn, "s", "400,401,403,404,407,502", "HTTP Status codes to ignore")
 	flag.StringVar(&statusCodes, "S", "200,301,302,405,500", "HTTP Status codes to record. Currently does NOTHING (dw about it)")
@@ -65,6 +65,8 @@ func parseCMDLine() *libgograbber.State {
 	flag.IntVar(&s.ScreenshotQuality, "Q", 50, "Screenshot quality as a percentage (higher means more megatronz per screenshot).")
 	flag.StringVar(&s.PhantomJSPath, "phantomjs", "phantomjs", "Path to phantomjs binary for rendering web pages")
 	flag.BoolVar(&AdvancedUsage, "hh", false, "Print advanced usage details with examples!")
+	flag.BoolVar(&s.FollowRedirects, "fr", false, "Follow redirects")
+
 	flag.BoolVar(&s.IgnoreSSLErrors, "k", true, "Ignore SSL/TLS cert validation errors (super secure amirite?). Look, if you're using this app you probably know the risks, and let's face it, dgaf.")
 
 	flag.BoolVar(&easy, "easy", false, "Enables common scan options: '-scan -dirbust -screenshot -p top -P http,https -t 2000 -j 25 -p_procs 7'")
@@ -79,11 +81,7 @@ func parseCMDLine() *libgograbber.State {
 			http.ListenAndServe("localhost:6060", nil)
 		}()
 	}
-	if err := libgograbber.Initialise(&s, ports, wordlist, statusCodesIgn, protocols, timeout, AdvancedUsage, easy); err.ErrorOrNil() != nil {
-		libgograbber.Error.Printf("%s\n", err.Error())
-		return nil
-	}
-
+	libgograbber.Initialise(&s, ports, wordlist, statusCodesIgn, protocols, timeout, AdvancedUsage, easy)
 	return &s
 }
 

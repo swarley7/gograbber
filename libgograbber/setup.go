@@ -11,12 +11,11 @@ import (
 	"sync"
 	"time"
 
-	multierror "github.com/hashicorp/go-multierror"
 	phantomjs "github.com/swarley7/phantomjs"
 )
 
 // Initialise sets up the program's state
-func Initialise(s *State, ports string, wordlist string, statusCodesIgn string, protocols string, timeout int, AdvancedUsage bool, easy bool) (errors *multierror.Error) {
+func Initialise(s *State, ports string, wordlist string, statusCodesIgn string, protocols string, timeout int, AdvancedUsage bool, easy bool) {
 
 	if AdvancedUsage {
 
@@ -60,18 +59,23 @@ func Initialise(s *State, ports string, wordlist string, statusCodesIgn string, 
 	s.Timeout = time.Duration(timeout) * time.Second
 
 	tx = &http.Transport{
-		DialContext:           (d).DialContext,
-		TLSHandshakeTimeout:   s.Timeout,
-		MaxIdleConns:          100, //This could potentially be dropped to 1, we aren't going to hit the same server more than once ever
-		IdleConnTimeout:       s.Timeout,
-		ExpectContinueTimeout: s.Timeout,
-		DisableKeepAlives:     true, //keep things alive if possible - reuse connections
-		DisableCompression:    true,
-		TLSClientConfig:       &tls.Config{InsecureSkipVerify: true}}
+		DialContext: (d).DialContext,
+		// TLSHandshakeTimeout:   s.Timeout * 2,
+		MaxIdleConns: 100, //This could potentially be dropped to 1, we aren't going to hit the same server more than once ever
+		// IdleConnTimeout:       s.Timeout * 2,
+		// ExpectContinueTimeout: s.Timeout * 2,
+		// DisableKeepAlives:     true, //keep things alive if possible - reuse connections
+		DisableCompression: true,
+		TLSClientConfig:    &tls.Config{InsecureSkipVerify: s.IgnoreSSLErrors}}
 	cl = http.Client{
 		Transport: tx,
-		Timeout:   s.Timeout,
+		// Timeout:   15 * time.Second,
 	}
+	// if s.FollowRedirect {
+	// 	cl.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+	// 		return http.ErrUseLastResponse
+	// 	}
+	// }
 	s.Targets = make(chan Host)
 
 	s.URLProvided = false
@@ -102,7 +106,6 @@ func Initialise(s *State, ports string, wordlist string, statusCodesIgn string, 
 					panic(err)
 				}
 				for _, item := range inputData {
-					// s.URLComponents
 					ParseURLToHost(item, s.Targets)
 				}
 			}
@@ -128,14 +131,6 @@ func Initialise(s *State, ports string, wordlist string, statusCodesIgn string, 
 			ports = top
 		}
 		s.Ports = UnpackPortString(ports)
-		// for _, port := range StrArrToInt(strings.Split(ports, ",")) {
-		// 	if v := int(math.Pow(2, 16.0)); 0 > port || port >= v {
-		// 		Error.Printf("Port: (%v) is invalid!\n", port)
-		// 		continue
-		// 	}
-		// 	s.Ports.Add(port)
-
-		// }
 
 	}
 	if s.InputFile != "" {
@@ -178,10 +173,6 @@ func Start(s State) {
 	fmt.Printf(LineSep())
 
 	os.Mkdir(path.Join(s.OutputDirectory), 0755) // drwxr-xr-x
-	// cl.Timeout = s.Timeout * time.Second
-	// d.Timeout = 1 * time.Second
-	// d.DisableKeepAlives()
-
 	ScanChan := make(chan Host)
 	DirbChan := make(chan Host)
 	ScreenshotChan := make(chan Host)

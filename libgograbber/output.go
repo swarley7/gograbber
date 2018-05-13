@@ -1,6 +1,7 @@
 package libgograbber
 
 import (
+	"bufio"
 	"bytes"
 	"fmt"
 	"net/http"
@@ -8,8 +9,6 @@ import (
 	"path"
 	"regexp"
 	"time"
-
-	tm "github.com/buger/goterm"
 )
 
 func buildResponseHeader(header *http.Response) string {
@@ -29,7 +28,7 @@ func MarkdownReport(s *State, targets chan Host) string {
 		t.Hour(), t.Minute(), t.Second())
 	var reportFile string
 	if s.ProjectName != "" {
-		reportFile = path.Join(s.ReportDirectory, fmt.Sprintf("%v_%v_Report.md", s.ProjectName, currTime))
+		reportFile = path.Join(s.ReportDirectory, fmt.Sprintf("%v_%v_Report.md", SanitiseFilename(s.ProjectName), currTime))
 
 	} else {
 		reportFile = path.Join(s.ReportDirectory, fmt.Sprintf("%v_Report.md", currTime))
@@ -66,18 +65,25 @@ func MarkdownReport(s *State, targets chan Host) string {
 	return reportFile
 }
 
-func TextOutput(s *State) {
-	tm.Clear()
-	box := tm.NewBox(100|tm.PCT, 5, 1)
-	fmt.Fprint(box, "Some box content")
-	time.Sleep(5 * time.Second)
-}
-
-func JSONify(s *State) {
-
-}
-
 func SanitiseFilename(UnsanitisedFilename string) string {
-	r := regexp.MustCompile("[0-9a-zA-Z-._]")
-	return r.ReplaceAllString(UnsanitisedFilename, "[0-9a-zA-Z-._]")
+	r := regexp.MustCompile("[^0-9a-zA-Z-._]")
+	return r.ReplaceAllString(UnsanitisedFilename, "_")
+}
+
+func writerWorker(writeChan chan []byte, filename string) {
+	file, err := os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if os.IsNotExist(err) {
+		file, err = os.Create(filename)
+	}
+	if err != nil {
+		panic(err)
+	}
+	writer := bufio.NewWriter(file)
+	for {
+		b := <-writeChan
+		if len(b) > 0 {
+			writer.Write(b)
+			writer.Flush()
+		}
+	}
 }

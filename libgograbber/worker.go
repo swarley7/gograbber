@@ -1,33 +1,13 @@
 package libgograbber
 
 import (
-	"bufio"
 	"fmt"
 	"io/ioutil"
 	"math/rand"
-	"os"
 	"strings"
 	"sync"
 	"time"
 )
-
-func writerWorker(writeChan chan []byte, filename string) {
-	file, err := os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if os.IsNotExist(err) {
-		file, err = os.Create(filename)
-	}
-	if err != nil {
-		panic(err)
-	}
-	writer := bufio.NewWriter(file)
-	for {
-		b := <-writeChan
-		if len(b) > 0 {
-			writer.Write(b)
-			writer.Flush()
-		}
-	}
-}
 
 func RoutineManager(s *State, ScanChan chan Host, DirbustChan chan Host, ScreenshotChan chan Host, wg *sync.WaitGroup) {
 	defer wg.Done()
@@ -130,10 +110,12 @@ func RoutineManager(s *State, ScanChan chan Host, DirbustChan chan Host, Screens
 				}
 				if s.Soft404Detection {
 					randURL := fmt.Sprintf("%v://%v:%v/%v", host.Protocol, host.HostAddr, host.Port, RandString(16))
-					// fmt.Printf("Soft404 checking [%v]\n", randURL)
+					Debug.Printf("Soft404 checking [%v]\n", randURL)
 					randResp, err := cl.Get(randURL)
 					if err != nil {
 						fuggoff = true
+						Error.Printf("Soft404 check failed... [%v] Err:[%v] \n", randURL, err)
+
 						return
 						// panic(err)
 					}
@@ -155,12 +137,12 @@ func RoutineManager(s *State, ScanChan chan Host, DirbustChan chan Host, Screens
 					for path, _ := range s.Paths.Set {
 						threadChan <- struct{}{}
 						xwg.Add(1)
-						go HTTPGetter(&xwg, host, s.Debug, s.Jitter, s.Soft404Detection, s.StatusCodesIgn, s.Ratio, path, DirbustChan, threadChan, s.ProjectName, s.HTTPResponseDirectory, dWriteChan)
+						go HTTPGetter(&xwg, host, s.Debug, s.Jitter, s.Soft404Detection, s.StatusCodesIgn, s.Ratio, path, DirbustChan, threadChan, s.ProjectName, s.HTTPResponseDirectory, dWriteChan, s.HostHeader, s.FollowRedirects)
 					}
 				} else {
 					threadChan <- struct{}{}
 					xwg.Add(1)
-					go HTTPGetter(&xwg, host, s.Debug, s.Jitter, s.Soft404Detection, s.StatusCodesIgn, s.Ratio, host.Path, DirbustChan, threadChan, s.ProjectName, s.HTTPResponseDirectory, dWriteChan)
+					go HTTPGetter(&xwg, host, s.Debug, s.Jitter, s.Soft404Detection, s.StatusCodesIgn, s.Ratio, host.Path, DirbustChan, threadChan, s.ProjectName, s.HTTPResponseDirectory, dWriteChan, s.HostHeader, s.FollowRedirects)
 				}
 				xwg.Wait()
 			}()
