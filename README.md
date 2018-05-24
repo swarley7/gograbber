@@ -2,6 +2,8 @@
 
 A horizontal and vertical web content enumerator by swarley7 (@swarley777)
 
+**WARNING: This code is in `pre-alpha/beta.v01.FINAL_Draft_v2` mode. Use at your own risk. It's probably buggy as hell...**
+
 # Introduction
 
 `gograbber` is a shitty program I made to solve a number of problems I have with content enumerators:
