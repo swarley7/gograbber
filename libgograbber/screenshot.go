@@ -57,7 +57,7 @@ func ScreenshotAURL(wg *sync.WaitGroup, s *State, cnt int, host Host, results ch
 		Error.Printf("Unable to save Screenshot: %v (%v)\n", url, err)
 		return err
 	}
-	Good.Printf("Screenshot saved to: [%v]\n", g.Sprintf("%s", screenshotFilename))
+	Good.Printf("Screenshot for [%v] saved to: [%v]\n", g.Sprintf("%s", url), g.Sprintf("%s", screenshotFilename))
 	host.ScreenshotFilename = screenshotFilename
 	results <- host
 	return err

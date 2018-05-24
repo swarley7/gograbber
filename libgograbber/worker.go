@@ -103,6 +103,9 @@ func RoutineManager(s *State, ScanChan chan Host, DirbustChan chan Host, Screens
 					fuggoff = false
 					if s.Soft404Detection {
 						randURL := fmt.Sprintf("%v://%v:%v/%v", host.Protocol, host.HostAddr, host.Port, RandString(16))
+						if s.Debug {
+							Debug.Printf("Soft404 checking [%v]\n", randURL)
+						}
 						Debug.Printf("Soft404 checking [%v]\n", randURL)
 						req, err := http.NewRequest("GET", randURL, nil)
 						if err != nil {
@@ -112,7 +115,9 @@ func RoutineManager(s *State, ScanChan chan Host, DirbustChan chan Host, Screens
 						randResp, err := cl.Do(req)
 						if err != nil {
 							fuggoff = true
-							Error.Printf("Soft404 check failed... [%v] Err:[%v] \n", randURL, err)
+							if s.Debug {
+								Error.Printf("Soft404 check failed... [%v] Err:[%v] \n", randURL, err)
+							}
 							return
 						}
 						data, err := ioutil.ReadAll(randResp.Body)
