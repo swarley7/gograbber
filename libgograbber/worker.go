@@ -117,6 +117,7 @@ func RoutineManager(s *State, ScanChan chan Host, DirbustChan chan Host, Screens
 							data, err := ioutil.ReadAll(randResp.Body)
 							if err != nil {
 								Error.Printf("uhhh... [%v]\n", err)
+								return
 							}
 							host.Soft404RandomURL = randURL
 							host.Soft404RandomPageContents = strings.Split(string(data), " ")
