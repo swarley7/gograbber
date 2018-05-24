@@ -1,4 +1,5 @@
 # gograbber
+
 A horizontal and vertical web content enumerator by swarley7 (@swarley777)
 
 # Introduction
@@ -15,10 +16,40 @@ A horizontal and vertical web content enumerator by swarley7 (@swarley777)
 - Screenshot discovered content! (can be tuned to prevent excessive output)
 - output is greppable
 
+# Installation/build instructions
+
+- install or download `phantomjs` if you wish to use the screenshot feature 
+- **note:** I am working on removing this dependency because phantomjs sucks and has been orphaned... please help if you can!
+
+## Easymode!
+
+- use the release binaries provided
+
+## Hardmode / I like to live on the edgeeeeee yeeeeeeeeeee!
+
+- `go get -u github.com/swarley7/gograbber`
+    - The above command *might* work
+- if not:
+    - `git clone https://github.com/swarley7/gograbber.git`
+    - `cd gograbber`
+    - `go get`
+    - `# hope there's no errors :(`
+    - `go build gograbber.go`
+- if all goes well you should be left with a binary file `gograbber`
+- you can probably symlink to `/usr/local/bin` or something: `ln -s /usr/local/bin /path/to/gograbber`
+
 # TODO
 
 - [x] write gograbber
 - [ ] make it not shit
+
+# Usage examples
+
+There's a lot of words in the usage text... but tl;dr:
+
+- `-scan` to portscan
+- `-dirbust` to do directory bruteforce
+- `-screenshot` to take some nasty pics of nasty web apps :D
 
 ```
 Examples for ./gograbber:
