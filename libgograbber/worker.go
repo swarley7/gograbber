@@ -95,8 +95,9 @@ func RoutineManager(s *State, ScanChan chan Host, DirbustChan chan Host, Screens
 				host.Protocol = scheme
 				dirbWg.Add(1)
 				var xwg = sync.WaitGroup{}
+				xwg.Add(1)
+
 				go func() {
-					xwg.Add(1)
 					defer dirbWg.Done()
 					defer xwg.Done()
 

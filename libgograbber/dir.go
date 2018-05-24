@@ -102,9 +102,9 @@ func HTTPGetter(wg *sync.WaitGroup, host Host, debug bool, Jitter int, soft404De
 		t.Hour(), t.Minute(), t.Second())
 	var responseFilename string
 	if ProjectName != "" {
-		responseFilename = fmt.Sprintf("%v/%v_%v-%v_%v.png", responseDirectory, strings.ToLower(SanitiseFilename(ProjectName)), SanitiseFilename(Url), currTime, rand.Int63())
+		responseFilename = fmt.Sprintf("%v/%v_%v-%v_%v.html", responseDirectory, strings.ToLower(SanitiseFilename(ProjectName)), SanitiseFilename(Url), currTime, rand.Int63())
 	} else {
-		responseFilename = fmt.Sprintf("%v/%v-%v_%v.png", responseDirectory, SanitiseFilename(Url), currTime, rand.Int63())
+		responseFilename = fmt.Sprintf("%v/%v-%v_%v.html", responseDirectory, SanitiseFilename(Url), currTime, rand.Int63())
 	}
 	file, err := os.Create(responseFilename)
 	if err != nil {
