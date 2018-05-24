@@ -80,7 +80,6 @@ func RoutineManager(s *State, ScanChan chan Host, DirbustChan chan Host, Screens
 			}
 			return
 		}
-		var fuggoff bool
 		// Do dirbusting
 		var dirbustOutFile string
 
