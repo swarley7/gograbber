@@ -94,9 +94,12 @@ func RoutineManager(s *State, ScanChan chan Host, DirbustChan chan Host, Screens
 			for scheme := range s.Protocols.Set {
 				host.Protocol = scheme
 				dirbWg.Add(1)
+				var xwg = sync.WaitGroup{}
+				xwg.Add(1)
 				go func() {
 					defer dirbWg.Done()
-					var xwg = sync.WaitGroup{}
+					defer xwg.Done()
+
 					if s.Soft404Detection {
 						randURL := fmt.Sprintf("%v://%v:%v/%v", host.Protocol, host.HostAddr, host.Port, RandString(16))
 						if s.Debug {
@@ -121,13 +124,13 @@ func RoutineManager(s *State, ScanChan chan Host, DirbustChan chan Host, Screens
 
 					if !s.URLProvided {
 						for path, _ := range s.Paths.Set {
-							threadChan <- struct{}{}
 							xwg.Add(1)
+							threadChan <- struct{}{}
 							go HTTPGetter(&xwg, host, s.Debug, s.Jitter, s.Soft404Detection, s.StatusCodesIgn, s.Ratio, path, DirbustChan, threadChan, s.ProjectName, s.HTTPResponseDirectory, dWriteChan, s.HostHeader, s.FollowRedirects)
 						}
 					} else {
-						threadChan <- struct{}{}
 						xwg.Add(1)
+						threadChan <- struct{}{}
 						go HTTPGetter(&xwg, host, s.Debug, s.Jitter, s.Soft404Detection, s.StatusCodesIgn, s.Ratio, host.Path, DirbustChan, threadChan, s.ProjectName, s.HTTPResponseDirectory, dWriteChan, s.HostHeader, s.FollowRedirects)
 					}
 					xwg.Wait()
