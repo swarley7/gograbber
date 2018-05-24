@@ -29,5 +29,5 @@ A horizontal and vertical web content enumerator by swarley7 (@swarley777)
 # Donate?
 
 If you like this *thing* and want to shout a beer maybe do that?
-- ETH: ``
-- BTC: ``
+- ETH: `0x486b0faea72a17425ed7241e44dc9ed627f9e492`
+- BTC: `1Jdz37JDyZYnK7tRDkF9ZW8QJ2bk2DNHzh`
