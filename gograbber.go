@@ -6,7 +6,7 @@ import (
 	_ "net/http/pprof"
 	"os"
 
-	"./libgograbber"
+	"github.com/swarley7/gograbber/libgograbber"
 )
 
 func parseCMDLine() *libgograbber.State {
