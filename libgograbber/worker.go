@@ -113,11 +113,11 @@ func RoutineManager(s *State, ScanChan chan Host, DirbustChan chan Host, Screens
 								Error.Printf("Soft404 check failed... [%v] Err:[%v] \n", randURL, err)
 							}
 						} else {
+							defer randResp.Body.Close()
 							data, err := ioutil.ReadAll(randResp.Body)
 							if err != nil {
 								Error.Printf("uhhh... [%v]\n", err)
 							}
-							randResp.Body.Close()
 							host.Soft404RandomURL = randURL
 							host.Soft404RandomPageContents = strings.Split(string(data), " ")
 						}

@@ -76,7 +76,7 @@ func HTTPGetter(wg *sync.WaitGroup, host Host, debug bool, Jitter int, soft404De
 		if err != nil {
 			return
 		}
-		defer host.HTTPResp.Body.Close()
+		host.HTTPResp.Body.Close()
 		if statusCodesIgn.Contains(host.HTTPResp.StatusCode) {
 			return
 		}
@@ -84,7 +84,6 @@ func HTTPGetter(wg *sync.WaitGroup, host Host, debug bool, Jitter int, soft404De
 			x, err := host.HTTPResp.Location()
 			if err == nil {
 				nextUrl = x.String()
-
 			} else {
 				break
 			}
