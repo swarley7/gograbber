@@ -93,7 +93,7 @@ func HTTPGetter(wg *sync.WaitGroup, host Host, debug bool, Jitter int, soft404De
 			break
 		}
 	}
-	if soft404Detection && path != "" {
+	if soft404Detection && path != "" && host.Soft404RandomPageContents != nil {
 		soft404Ratio := detectSoft404(host.HTTPResp, host.Soft404RandomPageContents)
 		if soft404Ratio > Ratio {
 			if debug {

@@ -99,38 +99,29 @@ func RoutineManager(s *State, ScanChan chan Host, DirbustChan chan Host, Screens
 				go func() {
 					defer dirbWg.Done()
 					var xwg = sync.WaitGroup{}
-
-					fuggoff = false
 					if s.Soft404Detection {
 						randURL := fmt.Sprintf("%v://%v:%v/%v", host.Protocol, host.HostAddr, host.Port, RandString(16))
 						if s.Debug {
 							Debug.Printf("Soft404 checking [%v]\n", randURL)
 						}
-						Debug.Printf("Soft404 checking [%v]\n", randURL)
 						req, err := http.NewRequest("GET", randURL, nil)
 						if err != nil {
-							fuggoff = true
 							return
 						}
 						randResp, err := cl.Do(req)
 						if err != nil {
-							fuggoff = true
 							if s.Debug {
 								Error.Printf("Soft404 check failed... [%v] Err:[%v] \n", randURL, err)
 							}
-							return
+						} else {
+							data, err := ioutil.ReadAll(randResp.Body)
+							if err != nil {
+								Error.Printf("uhhh... [%v]\n", err)
+							}
+							randResp.Body.Close()
+							host.Soft404RandomURL = randURL
+							host.Soft404RandomPageContents = strings.Split(string(data), " ")
 						}
-						data, err := ioutil.ReadAll(randResp.Body)
-						if err != nil {
-							fuggoff = true
-							return
-						}
-						randResp.Body.Close()
-						host.Soft404RandomURL = randURL
-						host.Soft404RandomPageContents = strings.Split(string(data), " ")
-					}
-					if fuggoff {
-						return
 					}
 
 					if !s.URLProvided {
