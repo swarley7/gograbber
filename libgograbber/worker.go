@@ -95,8 +95,8 @@ func RoutineManager(s *State, ScanChan chan Host, DirbustChan chan Host, Screens
 				host.Protocol = scheme
 				dirbWg.Add(1)
 				var xwg = sync.WaitGroup{}
-				xwg.Add(1)
 				go func() {
+					xwg.Add(1)
 					defer dirbWg.Done()
 					defer xwg.Done()
 
@@ -133,8 +133,9 @@ func RoutineManager(s *State, ScanChan chan Host, DirbustChan chan Host, Screens
 						threadChan <- struct{}{}
 						go HTTPGetter(&xwg, host, s.Debug, s.Jitter, s.Soft404Detection, s.StatusCodesIgn, s.Ratio, host.Path, DirbustChan, threadChan, s.ProjectName, s.HTTPResponseDirectory, dWriteChan, s.HostHeader, s.FollowRedirects)
 					}
-					xwg.Wait()
 				}()
+				xwg.Wait()
+
 			}
 		}
 		dirbWg.Wait()
