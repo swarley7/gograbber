@@ -59,10 +59,12 @@ func Initialise(s *State, ports string, wordlist string, statusCodesIgn string, 
 	tx = &http.Transport{
 		DialContext:        (d).DialContext,
 		DisableCompression: true,
-		TLSClientConfig:    &tls.Config{InsecureSkipVerify: s.IgnoreSSLErrors}}
+		MaxIdleConns:       100,
+
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: s.IgnoreSSLErrors}}
 	cl = http.Client{
 		Transport: tx,
-		// Timeout:   s.Timeout,
+		Timeout:   s.Timeout,
 	}
 	// if s.FollowRedirect {
 	// 	cl.CheckRedirect = func(req *http.Request, via []*http.Request) error {

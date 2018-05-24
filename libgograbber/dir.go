@@ -64,23 +64,16 @@ func HTTPGetter(wg *sync.WaitGroup, host Host, debug bool, Jitter int, soft404De
 	var i int
 	for i < 5 { // number of times to follow redirect
 
-		host.HTTPReq, err = http.NewRequest("GET", nextUrl, nil)
-
+		host.HTTPReq, host.HTTPResp, err = makeHTTPRequest(nextUrl)
 		if err != nil {
 			return
 		}
-		if hostHeader != "" {
-			host.HTTPReq.Host = hostHeader
-		}
-		host.HTTPResp, err = cl.Do(host.HTTPReq)
-		if err != nil {
-			return
-		}
-		host.HTTPResp.Body.Close()
 		if statusCodesIgn.Contains(host.HTTPResp.StatusCode) {
+			host.HTTPResp.Body.Close()
 			return
 		}
 		if host.HTTPResp.StatusCode >= 300 && host.HTTPResp.StatusCode < 400 && followRedirects {
+			host.HTTPResp.Body.Close()
 			x, err := host.HTTPResp.Location()
 			if err == nil {
 				nextUrl = x.String()
@@ -88,6 +81,7 @@ func HTTPGetter(wg *sync.WaitGroup, host Host, debug bool, Jitter int, soft404De
 				break
 			}
 		} else {
+			defer host.HTTPResp.Body.Close()
 			Url = nextUrl
 			break
 		}

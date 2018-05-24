@@ -411,3 +411,15 @@ func UnpackPortString(ports string) (ProcessedPorts IntSet) {
 	}
 	return
 }
+
+func makeHTTPRequest(url string) (req *http.Request, resp *http.Response, err error) {
+	req, err = http.NewRequest("GET", url, nil)
+	if err != nil {
+		return
+	}
+	resp, err = cl.Do(req)
+	if err != nil {
+		return
+	}
+	return
+}

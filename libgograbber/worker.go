@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"math/rand"
-	"net/http"
 	"strings"
 	"sync"
 	"time"
@@ -103,11 +102,7 @@ func RoutineManager(s *State, ScanChan chan Host, DirbustChan chan Host, Screens
 						if s.Debug {
 							Debug.Printf("Soft404 checking [%v]\n", randURL)
 						}
-						req, err := http.NewRequest("GET", randURL, nil)
-						if err != nil {
-							return
-						}
-						randResp, err := cl.Do(req)
+						_, randResp, err := makeHTTPRequest(randURL)
 						if err != nil {
 							if s.Debug {
 								Error.Printf("Soft404 check failed... [%v] Err:[%v] \n", randURL, err)
