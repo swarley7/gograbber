@@ -16,7 +16,12 @@ A horizontal and vertical web content enumerator by swarley7 (@swarley777)
 `gograbber` attempts to solve these problems!
 - Supply a list of urls, hosts, ip addresses, CIDR ranges, ports, web paths, whatever... and `gograbber` will attempt to discover stuff there.
 - Screenshot discovered content! (can be tuned to prevent excessive output)
-- output is greppable
+- gograbber findings are output to file by default
+- output is greppable (markdown report and various txt files produced with findings)
+
+Basically the rationale is *"I want to scan these network ranges and IPs for port 80,443,8080 and see what webservices are open"*, which has come in very handy while conducting pentests for clients. Such a scan could be accomplished using:
+
+`$ gograbber -T 30 -t 2000 -scan -dirbust -screenshot -p 80,443,8080 -i hosts.txt -w wordlist.txt`
 
 # Installation/build instructions
 
