@@ -25,7 +25,7 @@ func ConnectHost(wg *sync.WaitGroup, timeout time.Duration, Jitter int, debug bo
 		results <- host
 	} else {
 		if debug {
-			Debug.Printf("Err: %v\n", err)
+			Debug.Printf("Err connecting [%v:%v]: %v\n", host.HostAddr, host.Port, err)
 		}
 	}
 }

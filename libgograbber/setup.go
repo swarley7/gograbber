@@ -44,7 +44,7 @@ func Initialise(s *State, ports string, wordlist string, statusCodesIgn string, 
 		os.Exit(0)
 	}
 	if easy { // user wants to use easymode... lol?
-		s.Timeout = 2
+		s.Timeout = 20
 		s.Jitter = 25
 		s.Scan = true
 		s.Dirbust = true
