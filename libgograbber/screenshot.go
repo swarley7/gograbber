@@ -49,11 +49,11 @@ func ScreenshotAURL(wg *sync.WaitGroup, s *State, cnt int, host Host, results ch
 		t.Hour(), t.Minute(), t.Second())
 	var screenshotFilename string
 	if s.ProjectName != "" {
-		screenshotFilename = fmt.Sprintf("%v/%v_%v-%v_%v.png", s.ScreenshotDirectory, strings.ToLower(SanitiseFilename(s.ProjectName)), SanitiseFilename(url), currTime, rand.Int63())
+		screenshotFilename = fmt.Sprintf("%v/%v_%v-%v_%v.%v", s.ScreenshotDirectory, strings.ToLower(SanitiseFilename(s.ProjectName)), SanitiseFilename(url), currTime, rand.Int63(), s.ScreenshotFileType)
 	} else {
-		screenshotFilename = fmt.Sprintf("%v/%v-%v_%v.png", s.ScreenshotDirectory, SanitiseFilename(url), currTime, rand.Int63())
+		screenshotFilename = fmt.Sprintf("%v/%v-%v_%v.%v", s.ScreenshotDirectory, SanitiseFilename(url), currTime, rand.Int63(), s.ScreenshotFileType)
 	}
-	if err := page.Render(screenshotFilename, "png", s.ScreenshotQuality); err != nil {
+	if err := page.Render(screenshotFilename, s.ScreenshotFileType, s.ScreenshotQuality); err != nil {
 		Error.Printf("Unable to save Screenshot: %v (%v)\n", url, err)
 		return err
 	}

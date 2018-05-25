@@ -15,6 +15,7 @@ type State struct {
 	PhantomProcesses       []phantomjs.Process
 	ScreenshotQuality      int
 	ScreenshotDirectory    string
+	ScreenshotFileType     string
 	FollowRedirects        bool
 	ReportDirectory        string
 	HostHeader             string

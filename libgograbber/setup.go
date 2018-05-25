@@ -43,6 +43,8 @@ func Initialise(s *State, ports string, wordlist string, statusCodesIgn string, 
 		Usage()
 		os.Exit(0)
 	}
+	s.ScreenshotFileType = strings.ToLower(s.ScreenshotFileType)
+
 	if easy { // user wants to use easymode... lol?
 		s.Timeout = 20
 		s.Jitter = 25
