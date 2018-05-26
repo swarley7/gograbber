@@ -18,7 +18,7 @@ type State struct {
 	ScreenshotFileType     string
 	FollowRedirects        bool
 	ReportDirectory        string
-	HostHeader             string
+	HostHeaders            StringSet
 	ScanOutputDirectory    string
 	ProjectName            string
 	DirbustOutputDirectory string

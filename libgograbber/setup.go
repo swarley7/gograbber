@@ -15,7 +15,7 @@ import (
 )
 
 // Initialise sets up the program's state
-func Initialise(s *State, ports string, wordlist string, statusCodesIgn string, protocols string, timeout int, AdvancedUsage bool, easy bool) {
+func Initialise(s *State, ports string, wordlist string, statusCodesIgn string, protocols string, timeout int, AdvancedUsage bool, easy bool, HostHeaderFile string) {
 
 	if AdvancedUsage {
 
@@ -43,7 +43,6 @@ func Initialise(s *State, ports string, wordlist string, statusCodesIgn string, 
 		Usage()
 		os.Exit(0)
 	}
-	s.ScreenshotFileType = strings.ToLower(s.ScreenshotFileType)
 
 	if easy { // user wants to use easymode... lol?
 		s.Timeout = 20
@@ -54,6 +53,19 @@ func Initialise(s *State, ports string, wordlist string, statusCodesIgn string, 
 		s.Threads = 1000
 		s.NumPhantomProcs = 7
 		ports = "top"
+	}
+	s.HostHeaders = StringSet{map[string]bool{}}
+	if HostHeaderFile != "" {
+		hostHeaders, err := GetDataFromFile(HostHeaderFile)
+		if err != nil {
+			Error.Println(err)
+			panic(err)
+		}
+		for _, hostHeader := range hostHeaders {
+			s.HostHeaders.Add(hostHeader)
+		}
+	} else {
+		s.HostHeaders.Add("")
 	}
 
 	s.Timeout = time.Duration(timeout) * time.Second
@@ -68,12 +80,9 @@ func Initialise(s *State, ports string, wordlist string, statusCodesIgn string, 
 		Transport: tx,
 		Timeout:   s.Timeout,
 	}
-	// if s.FollowRedirect {
-	// 	cl.CheckRedirect = func(req *http.Request, via []*http.Request) error {
-	// 		return http.ErrUseLastResponse
-	// 	}
-	// }
+
 	s.Targets = make(chan Host)
+	s.ScreenshotFileType = strings.ToLower(s.ScreenshotFileType)
 
 	s.URLProvided = false
 	if s.URLFile != "" || s.SingleURL != "" {
@@ -84,6 +93,8 @@ func Initialise(s *State, ports string, wordlist string, statusCodesIgn string, 
 	if wordlist != "" {
 		pathData, err := GetDataFromFile(wordlist)
 		if err != nil {
+			Error.Println(err)
+
 			panic(err)
 		}
 		s.Paths = StringSet{Set: map[string]bool{}}

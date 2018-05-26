@@ -15,8 +15,8 @@ func RoutineManager(s *State, ScanChan chan Host, DirbustChan chan Host, Screens
 	var scanWg = sync.WaitGroup{}
 	var dirbWg = sync.WaitGroup{}
 	var screenshotWg = sync.WaitGroup{}
-	t := time.Now()
-	currTime := fmt.Sprintf("%d%d%d%d%d%d", t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second())
+	currTime := GetTimeString()
+
 	if s.Debug {
 		ticker := time.NewTicker(10 * time.Second)
 		startTime := time.Now()
@@ -91,52 +91,57 @@ func RoutineManager(s *State, ScanChan chan Host, DirbustChan chan Host, Screens
 		}
 		go writerWorker(dWriteChan, dirbustOutFile)
 		for host := range ScanChan {
-			for scheme := range s.Protocols.Set {
-				host.Protocol = scheme
-				dirbWg.Add(1)
-				var xwg = sync.WaitGroup{}
-				xwg.Add(1)
+			host.Cookies = s.Cookies
+			for hostHeader, _ := range s.HostHeaders.Set {
+				host.HostHeader = hostHeader
 
-				go func() {
-					defer dirbWg.Done()
-					defer xwg.Done()
+				for scheme := range s.Protocols.Set {
+					host.Protocol = scheme
+					dirbWg.Add(1)
+					var xwg = sync.WaitGroup{}
+					xwg.Add(1)
 
-					if s.Soft404Detection {
-						randURL := fmt.Sprintf("%v://%v:%v/%v", host.Protocol, host.HostAddr, host.Port, RandString(16))
-						if s.Debug {
-							Debug.Printf("Soft404 checking [%v]\n", randURL)
-						}
-						_, randResp, err := makeHTTPRequest(randURL)
-						if err != nil {
+					go func() {
+						defer dirbWg.Done()
+						defer xwg.Done()
+
+						if s.Soft404Detection {
+							randURL := fmt.Sprintf("%v://%v:%v/%v", host.Protocol, host.HostAddr, host.Port, RandString())
 							if s.Debug {
-								Error.Printf("Soft404 check failed... [%v] Err:[%v] \n", randURL, err)
+								Debug.Printf("Soft404 checking [%v]\n", randURL)
+							}
+							_, randResp, err := host.makeHTTPRequest(randURL)
+							if err != nil {
+								if s.Debug {
+									Error.Printf("Soft404 check failed... [%v] Err:[%v] \n", randURL, err)
+								}
+							} else {
+								defer randResp.Body.Close()
+								data, err := ioutil.ReadAll(randResp.Body)
+								if err != nil {
+									Error.Printf("uhhh... [%v]\n", err)
+									return
+								}
+								host.Soft404RandomURL = randURL
+								host.Soft404RandomPageContents = strings.Split(string(data), " ")
+							}
+						}
+
+						if !s.URLProvided {
+							for path, _ := range s.Paths.Set {
+								xwg.Add(1)
+								threadChan <- struct{}{}
+								go HTTPGetter(&xwg, host, s.Debug, s.Jitter, s.Soft404Detection, s.StatusCodesIgn, s.Ratio, path, DirbustChan, threadChan, s.ProjectName, s.HTTPResponseDirectory, dWriteChan, s.FollowRedirects)
 							}
 						} else {
-							defer randResp.Body.Close()
-							data, err := ioutil.ReadAll(randResp.Body)
-							if err != nil {
-								Error.Printf("uhhh... [%v]\n", err)
-								return
-							}
-							host.Soft404RandomURL = randURL
-							host.Soft404RandomPageContents = strings.Split(string(data), " ")
-						}
-					}
-
-					if !s.URLProvided {
-						for path, _ := range s.Paths.Set {
 							xwg.Add(1)
 							threadChan <- struct{}{}
-							go HTTPGetter(&xwg, host, s.Debug, s.Jitter, s.Soft404Detection, s.StatusCodesIgn, s.Ratio, path, DirbustChan, threadChan, s.ProjectName, s.HTTPResponseDirectory, dWriteChan, s.HostHeader, s.FollowRedirects)
+							go HTTPGetter(&xwg, host, s.Debug, s.Jitter, s.Soft404Detection, s.StatusCodesIgn, s.Ratio, host.Path, DirbustChan, threadChan, s.ProjectName, s.HTTPResponseDirectory, dWriteChan, s.FollowRedirects)
 						}
-					} else {
-						xwg.Add(1)
-						threadChan <- struct{}{}
-						go HTTPGetter(&xwg, host, s.Debug, s.Jitter, s.Soft404Detection, s.StatusCodesIgn, s.Ratio, host.Path, DirbustChan, threadChan, s.ProjectName, s.HTTPResponseDirectory, dWriteChan, s.HostHeader, s.FollowRedirects)
-					}
-				}()
-				xwg.Wait()
+					}()
+					xwg.Wait()
 
+				}
 			}
 		}
 		dirbWg.Wait()

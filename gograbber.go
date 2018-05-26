@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/swarley7/gograbber/libgograbber"
+	// "./libgograbber"
 )
 
 func parseCMDLine() *libgograbber.State {
@@ -19,6 +20,7 @@ func parseCMDLine() *libgograbber.State {
 	var timeout int
 	var AdvancedUsage bool
 	var easy bool
+	var HostHeaderFile string
 	libgograbber.InitLogger(os.Stdout, os.Stdout, os.Stdout, os.Stdout, os.Stderr)
 
 	// Commandline arguments
@@ -41,7 +43,7 @@ func parseCMDLine() *libgograbber.State {
 
 	// Dirbust related
 	flag.BoolVar(&s.Dirbust, "dirbust", false, "Perform dirbust-like directory brute force of hosts using provided wordlist")
-	flag.StringVar(&s.HostHeader, "H", "", "Optional: Supply a custom host header (maybe for bypassing WAF/CDN garbage?)")
+	flag.StringVar(&HostHeaderFile, "H", "", "Optional: Supply a file containing custom host headers that you would like to issue with each request (maybe for bypassing WAF/CDN/VHOST garbage?)")
 	flag.StringVar(&protocols, "P", "http,https", "If provided, each host will be tested for the given protocol")
 	flag.StringVar(&statusCodesIgn, "s", "400,401,403,404,407,502", "HTTP Status codes to ignore")
 	flag.StringVar(&statusCodes, "S", "200,301,302,405,500", "HTTP Status codes to record. Currently does NOTHING (dw about it)")
@@ -59,6 +61,7 @@ func parseCMDLine() *libgograbber.State {
 
 	flag.BoolVar(&s.Screenshot, "screenshot", false, "Take pretty pictures of discovered URLs")
 	flag.IntVar(&s.NumPhantomProcs, "p_procs", 5, "Number of phantomjs processes to spawn; helps when you're trying to screenshot a ton of stuff at once.")
+	flag.StringVar(&s.Cookies, "C", "", "Optional cookies to supply with each request. Provide as a semicolon separated string, e.g. \"'cookie1=value1;cookie2=value2'\" (so just like, copy paste from Burp)")
 
 	flag.IntVar(&s.ImgX, "img_x", 1024, "The width of screenshot images in pixels")
 	flag.IntVar(&s.ImgY, "img_y", 800, "The height of screenshot images in pixels")
@@ -82,7 +85,7 @@ func parseCMDLine() *libgograbber.State {
 			http.ListenAndServe("localhost:6060", nil)
 		}()
 	}
-	libgograbber.Initialise(&s, ports, wordlist, statusCodesIgn, protocols, timeout, AdvancedUsage, easy)
+	libgograbber.Initialise(&s, ports, wordlist, statusCodesIgn, protocols, timeout, AdvancedUsage, easy, HostHeaderFile)
 	return &s
 }
 

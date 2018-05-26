@@ -57,6 +57,9 @@ type Host struct {
 	Soft404Done               bool
 	HTTPResp                  *http.Response
 	HTTPReq                   *http.Request
+	HostHeader                string
+	UserAgent                 string
+	Cookies                   string
 }
 
 func (host *Host) PrefetchHash() (h string) {
@@ -138,6 +141,13 @@ func ApplyJitter(Jitter int) {
 		jitter := time.Duration(rand.Intn(Jitter)) * time.Millisecond
 		time.Sleep(jitter)
 	}
+}
+
+func GetTimeString() (currTime string) {
+	t := time.Now()
+	currTime = fmt.Sprintf("%d%d%d%d%d%d", t.Year(), t.Month(), t.Day(),
+		t.Hour(), t.Minute(), t.Second())
+	return
 }
 
 func Hosts(cidr string) ([]string, error) {
@@ -375,7 +385,7 @@ func StringWithCharset(length int, charset string) string {
 	return string(b)
 }
 
-func RandString(length int) string {
+func RandString() string {
 	return fmt.Sprintf("%v", uuid.New())
 }
 
@@ -412,11 +422,22 @@ func UnpackPortString(ports string) (ProcessedPorts IntSet) {
 	return
 }
 
-func makeHTTPRequest(url string) (req *http.Request, resp *http.Response, err error) {
+func (host *Host) makeHTTPRequest(url string) (req *http.Request, resp *http.Response, err error) {
 	req, err = http.NewRequest("GET", url, nil)
 	if err != nil {
 		return
 	}
+	if host.Cookies != "" {
+		req.Header.Set("Cookie", host.Cookies)
+	}
+	if host.HostHeader != "" {
+		req.Host = host.HostHeader
+	}
+	// TODO: support additional custom headers
+	//	- Will probably require a cmdline arg for JSON header object or something?
+	// if host.RequestHeaders != "" {
+	// 	req.Header =
+	// }
 	resp, err = cl.Do(req)
 	if err != nil {
 		return

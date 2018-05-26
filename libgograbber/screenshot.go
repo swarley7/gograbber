@@ -12,6 +12,7 @@ import (
 
 // Screenshots a url derived from a Host{} object
 func ScreenshotAURL(wg *sync.WaitGroup, s *State, cnt int, host Host, results chan Host, threads chan struct{}) (err error) {
+	// Ideally this function would not use phantomjs - I've looked at WebKit-go and that looks promising
 	defer func() {
 		<-threads
 		wg.Done()
@@ -44,9 +45,7 @@ func ScreenshotAURL(wg *sync.WaitGroup, s *State, cnt int, host Host, results ch
 		// <-target
 		return err
 	}
-	t := time.Now()
-	currTime := fmt.Sprintf("%d%d%d%d%d%d", t.Year(), t.Month(), t.Day(),
-		t.Hour(), t.Minute(), t.Second())
+	currTime := GetTimeString()
 	var screenshotFilename string
 	if s.ProjectName != "" {
 		screenshotFilename = fmt.Sprintf("%v/%v_%v-%v_%v.%v", s.ScreenshotDirectory, strings.ToLower(SanitiseFilename(s.ProjectName)), SanitiseFilename(url), currTime, rand.Int63(), s.ScreenshotFileType)

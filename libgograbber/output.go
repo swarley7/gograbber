@@ -8,7 +8,6 @@ import (
 	"os"
 	"path"
 	"regexp"
-	"time"
 )
 
 func buildResponseHeader(header *http.Response) string {
@@ -23,9 +22,8 @@ func buildResponseHeader(header *http.Response) string {
 
 func MarkdownReport(s *State, targets chan Host) string {
 	var report bytes.Buffer
-	t := time.Now()
-	currTime := fmt.Sprintf("%d%d%d%d%d%d", t.Year(), t.Month(), t.Day(),
-		t.Hour(), t.Minute(), t.Second())
+	currTime := GetTimeString()
+
 	var reportFile string
 	if s.ProjectName != "" {
 		reportFile = path.Join(s.ReportDirectory, fmt.Sprintf("%v_%v_Report.md", SanitiseFilename(s.ProjectName), currTime))

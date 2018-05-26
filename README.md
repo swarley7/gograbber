@@ -86,6 +86,10 @@ Examples for ./gograbber:
 - Aquatone (name?): this project was heavily inspired by aquatone (which is also awesome)
 - C_Sto: thx for forcing me to learn Golang and laughing at my extreme incompetence
 
+# License
+
+gograbber is licensed under the MIT licence. I have no idea what that means, but it sounds important.
+
 # Donate?
 
 If you like this *thing* and want to shout a beer maybe do that?
