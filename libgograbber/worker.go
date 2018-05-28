@@ -55,7 +55,6 @@ func RoutineManager(s *State, ScanChan chan Host, DirbustChan chan Host, Screens
 			go ConnectHost(&scanWg, s.Timeout, s.Jitter, s.Debug, host, ScanChan, threadChan, sWriteChan)
 		}
 		scanWg.Wait()
-		return
 	}()
 
 	wg.Add(1)
@@ -90,23 +89,28 @@ func RoutineManager(s *State, ScanChan chan Host, DirbustChan chan Host, Screens
 			dirbustOutFile = fmt.Sprintf("%v/urls_%v_%v_%v.txt", s.DirbustOutputDirectory, currTime, rand.Int63())
 		}
 		go writerWorker(dWriteChan, dirbustOutFile)
+		// var xwg = sync.WaitGroup{}
+		// dirbWg.Add(1)
 		for host := range ScanChan {
+			dirbWg.Add(1)
 			host.Cookies = s.Cookies
 			for hostHeader, _ := range s.HostHeaders.Set {
+				dirbWg.Add(1)
+
 				host.HostHeader = hostHeader
-
 				for scheme := range s.Protocols.Set {
-					host.Protocol = scheme
+					var h Host
+					h = host
+					h.Protocol = scheme // Weird hack to fix a random race condition...
+					// I think the modification inplace of the host object was creating a problem when accessed later in the dir.go file?
+					// xwg.Add(1)
 					dirbWg.Add(1)
-					var xwg = sync.WaitGroup{}
-					xwg.Add(1)
-
 					go func() {
 						defer dirbWg.Done()
-						defer xwg.Done()
+						// defer xwg.Done()
 
 						if s.Soft404Detection {
-							randURL := fmt.Sprintf("%v://%v:%v/%v", host.Protocol, host.HostAddr, host.Port, RandString())
+							randURL := fmt.Sprintf("%v://%v:%v/%v", h.Protocol, h.HostAddr, h.Port, RandString())
 							if s.Debug {
 								Debug.Printf("Soft404 checking [%v]\n", randURL)
 							}
@@ -129,20 +133,20 @@ func RoutineManager(s *State, ScanChan chan Host, DirbustChan chan Host, Screens
 
 						if !s.URLProvided {
 							for path, _ := range s.Paths.Set {
-								xwg.Add(1)
+								dirbWg.Add(1)
 								threadChan <- struct{}{}
-								go HTTPGetter(&xwg, host, s.Debug, s.Jitter, s.Soft404Detection, s.StatusCodesIgn, s.Ratio, path, DirbustChan, threadChan, s.ProjectName, s.HTTPResponseDirectory, dWriteChan, s.FollowRedirects)
+								go HTTPGetter(&dirbWg, h, s.Debug, s.Jitter, s.Soft404Detection, s.StatusCodesIgn, s.Ratio, path, DirbustChan, threadChan, s.ProjectName, s.HTTPResponseDirectory, dWriteChan, s.FollowRedirects)
 							}
 						} else {
-							xwg.Add(1)
+							dirbWg.Add(1)
 							threadChan <- struct{}{}
-							go HTTPGetter(&xwg, host, s.Debug, s.Jitter, s.Soft404Detection, s.StatusCodesIgn, s.Ratio, host.Path, DirbustChan, threadChan, s.ProjectName, s.HTTPResponseDirectory, dWriteChan, s.FollowRedirects)
+							go HTTPGetter(&dirbWg, h, s.Debug, s.Jitter, s.Soft404Detection, s.StatusCodesIgn, s.Ratio, host.Path, DirbustChan, threadChan, s.ProjectName, s.HTTPResponseDirectory, dWriteChan, s.FollowRedirects)
 						}
 					}()
-					xwg.Wait()
-
 				}
+				dirbWg.Done()
 			}
+			dirbWg.Done()
 		}
 		dirbWg.Wait()
 	}()
@@ -168,6 +172,5 @@ func RoutineManager(s *State, ScanChan chan Host, DirbustChan chan Host, Screens
 			cnt++
 		}
 		screenshotWg.Wait()
-		return
 	}()
 }
