@@ -18,6 +18,7 @@ A horizontal and vertical web content enumerator by swarley7 (@swarley777)
 - Screenshot discovered content! (can be tuned to prevent excessive output)
 - gograbber findings are output to file by default
 - output is greppable (markdown report and various txt files produced with findings)
+- `gograbber` can also detect "Soft 404's" or response wildcards (like when websites return 200 responses for EVERY request 😒)
 
 Basically the rationale is *"I want to scan these network ranges and IPs for port 80,443,8080 and see what webservices are open"*, which has come in very handy while conducting pentests for clients. Such a scan could be accomplished using:
 
