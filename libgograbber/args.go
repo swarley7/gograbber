@@ -66,5 +66,6 @@ type State struct {
 	OutputChan             chan string
 	Verbose                bool
 	Wordlist               string
+	Version                string
 	OutputDirectory        string
 }

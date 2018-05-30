@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
@@ -12,6 +13,8 @@ import (
 
 func parseCMDLine() *libgograbber.State {
 	s := libgograbber.State{Ports: libgograbber.IntSet{Set: map[int]bool{}}}
+	s.Version = "Alpha (0.2a)"
+
 	var ports string
 	var wordlist string
 	var statusCodesIgn string
@@ -62,7 +65,7 @@ func parseCMDLine() *libgograbber.State {
 	flag.BoolVar(&s.Screenshot, "screenshot", false, "Take pretty pictures of discovered URLs")
 	flag.IntVar(&s.NumPhantomProcs, "p_procs", 5, "Number of phantomjs processes to spawn; helps when you're trying to screenshot a ton of stuff at once.")
 	flag.StringVar(&s.Cookies, "C", "", "Optional cookies to supply with each request. Provide as a semicolon separated string, e.g. \"'cookie1=value1;cookie2=value2'\" (so just like, copy paste from Burp)")
-	flag.StringVar(&s.UserAgent, "ua", "gograbber - v0.1alpha - yeeee", "Set a custom user agent")
+	flag.StringVar(&s.UserAgent, "ua", fmt.Sprintf("gograbber - %v - yeeee", s.Version), "Set a custom user agent")
 
 	flag.IntVar(&s.ImgX, "img_x", 1024, "The width of screenshot images in pixels")
 	flag.IntVar(&s.ImgY, "img_y", 800, "The height of screenshot images in pixels")

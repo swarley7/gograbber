@@ -21,7 +21,7 @@ $$\   $$ |          $$\   $$ |
 \$$$$$$  |          \$$$$$$  |                                                           
  \______/            \______/`
 
-	var version = "Alpha (0.1a)"
+	var version = s.Version
 	var author = "Clinton \"swarley\" Carpene (@swarley777)"
 
 	if s.VerbosityLevel > 0 {
