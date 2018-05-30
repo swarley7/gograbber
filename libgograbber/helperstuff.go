@@ -230,7 +230,7 @@ func GetDataFromFile(fileName string) (data []string, err error) {
 	if fileName != "" {
 		data, err := readLines(fileName)
 		if err != nil {
-			fmt.Printf("File: %v does not exist, or you do not have permz (%v)\n", fileName, err)
+			Error.Printf("File: %v does not exist, or you do not have permz (%v)\n", fileName, err)
 			return nil, err
 		}
 		return data, err
@@ -355,9 +355,6 @@ func ParseURLToHost(URL string, targets chan Host) {
 			Port = 80
 		} else if strings.ToLower(URLObj.Scheme) == "https" {
 			Port = 443
-		} else {
-			fmt.Println(URLObj.Scheme)
-			return
 		}
 	}
 	path := URLObj.EscapedPath()

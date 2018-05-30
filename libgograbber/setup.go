@@ -89,6 +89,7 @@ func Initialise(s *State, ports string, wordlist string, statusCodesIgn string, 
 		s.URLProvided = true
 		s.Scan = false
 	}
+	s.Paths = StringSet{Set: map[string]bool{}}
 
 	if wordlist != "" {
 		pathData, err := GetDataFromFile(wordlist)
@@ -97,16 +98,21 @@ func Initialise(s *State, ports string, wordlist string, statusCodesIgn string, 
 
 			panic(err)
 		}
-		s.Paths = StringSet{Set: map[string]bool{}}
 		for _, path := range pathData {
 			s.Paths.Add(path)
 		}
+	} else {
+		s.Paths.Add("")
 	}
 
 	if s.URLProvided { // A url and/or file full of urls was supplied - treat them as gospel
-
+		// wg := sync.WaitGroup{}
+		// wg.Add(1)
 		go func() { // for reasons unknown this seems to work ok... other things dont. I don't understand computers
-			defer close(s.Targets)
+			defer func() {
+				close(s.Targets)
+				// wg.Done()
+			}()
 			if s.URLFile != "" {
 				inputData, err := GetDataFromFile(s.URLFile)
 				if err != nil {
@@ -114,6 +120,7 @@ func Initialise(s *State, ports string, wordlist string, statusCodesIgn string, 
 					panic(err)
 				}
 				for _, item := range inputData {
+					// Info.Println(item)
 					ParseURLToHost(item, s.Targets)
 				}
 			}

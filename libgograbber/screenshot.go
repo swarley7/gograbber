@@ -18,7 +18,18 @@ func ScreenshotAURL(wg *sync.WaitGroup, s *State, cnt int, host Host, results ch
 		wg.Done()
 	}()
 	page, err := s.PhantomProcesses[cnt%len(s.PhantomProcesses)].CreateWebPage()
+	var pUrl string
 	url := fmt.Sprintf("%v://%v:%v/%v", host.Protocol, host.HostAddr, host.Port, host.Path)
+
+	// if host.ResponseBodyFilename != "" {
+	// 	Debug.Printf("Loading from local file: %v", host.ResponseBodyFilename)
+	// 	cwd, _ := os.Getwd()
+	// 	pUrl = fmt.Sprintf("file://%v/%v", cwd, host.ResponseBodyFilename)
+
+	// } else {
+	pUrl = url
+	// }
+	//url := fmt.fSprintf("%v://%v:%v/%v", host.Protocol, host.HostAddr, host.Port, host.Path)
 
 	if err != nil {
 		Error.Printf("Unable to Create webpage: %v (%v)\n", url, err)
@@ -35,7 +46,7 @@ func ScreenshotAURL(wg *sync.WaitGroup, s *State, cnt int, host Host, results ch
 		Debug.Printf("Trying to screenshot URL: %v\n", url)
 	}
 	ApplyJitter(s.Jitter)
-	if err := page.Open(url); err != nil {
+	if err := page.Open(pUrl); err != nil {
 		Error.Printf("Unable to open page: %v (%v)\n", url, err)
 		return err
 	}
