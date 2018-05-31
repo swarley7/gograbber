@@ -96,7 +96,6 @@ func RoutineManager(s *State, ScanChan chan Host, DirbustChan chan Host, Screens
 			host.Cookies = s.Cookies
 			for hostHeader, _ := range s.HostHeaders.Set {
 				dirbWg.Add(1)
-
 				host.HostHeader = hostHeader
 				if s.URLProvided {
 					var h Host
@@ -139,8 +138,6 @@ func RoutineManager(s *State, ScanChan chan Host, DirbustChan chan Host, Screens
 						}
 
 					}()
-					dirbWg.Done()
-
 				} else {
 					for scheme := range s.Protocols.Set {
 						var h Host
@@ -183,8 +180,8 @@ func RoutineManager(s *State, ScanChan chan Host, DirbustChan chan Host, Screens
 
 						}()
 					}
-					dirbWg.Done()
 				}
+				dirbWg.Done()
 			}
 			dirbWg.Done()
 		}
