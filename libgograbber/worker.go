@@ -24,7 +24,10 @@ func RoutineManager(s *State, ScanChan chan Host, DirbustChan chan Host, Screens
 			var currTime time.Duration
 			for t := range ticker.C {
 				currTime = t.Sub(startTime)
+				fmt.Printf(LineSep())
 				Debug.Printf("Elapsed %v\n", currTime)
+				fmt.Printf(LineSep())
+
 			}
 		}()
 	}

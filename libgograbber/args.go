@@ -68,4 +68,5 @@ type State struct {
 	Wordlist               string
 	Version                string
 	OutputDirectory        string
+	StartTime              time.Time
 }

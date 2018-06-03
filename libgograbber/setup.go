@@ -234,7 +234,9 @@ func Start(s State) {
 	os.Mkdir(s.ReportDirectory, 0755) // drwxr-xr-x
 	reportFile := MarkdownReport(&s, ScreenshotChan)
 	wg.Wait()
-
+	currTime := time.Now()
+	fmt.Printf(LineSep())
+	Info.Printf("Gograbber completed in [%v] seconds\n", g.Sprintf("%v", currTime.Sub(s.StartTime)))
 	Info.Printf("Report written to: [%v]\n", g.Sprintf("%s", reportFile))
 	fmt.Printf(LineSep())
 }

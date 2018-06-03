@@ -124,11 +124,11 @@ func InitLogger(
 
 	Warning = log.New(warningHandle,
 		m.Sprintf("WARNING: "),
-		log.Ldate|log.Ltime|log.Lshortfile)
+		log.Ldate|log.Ltime)
 
 	Error = log.New(errorHandle,
 		r.Sprintf("ERROR: "),
-		log.Ldate|log.Ltime|log.Lshortfile)
+		log.Ldate|log.Ltime)
 }
 
 var d = net.Dialer{}

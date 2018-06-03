@@ -69,11 +69,13 @@ func HTTPGetter(wg *sync.WaitGroup, host Host, debug bool, Jitter int, soft404De
 			return
 		}
 	}
+	buf, err := ioutil.ReadAll(host.HTTPResp.Body)
+
 	if host.HostHeader != "" {
-		Good.Printf("%v - %v (HostHeader: %v)\n", Url, g.Sprintf("%d", host.HTTPResp.StatusCode), host.HostHeader)
+		Good.Printf("%v - %v [%v bytes] (HostHeader: %v)\n", Url, g.Sprintf("%d", host.HTTPResp.StatusCode), len(buf), host.HostHeader)
 
 	} else {
-		Good.Printf("%v - %v\n", Url, g.Sprintf("%d", host.HTTPResp.StatusCode))
+		Good.Printf("%v - %v [%v bytes]\n", Url, g.Sprintf("%d", host.HTTPResp.StatusCode), len(buf))
 	}
 	currTime := GetTimeString()
 
@@ -87,7 +89,6 @@ func HTTPGetter(wg *sync.WaitGroup, host Host, debug bool, Jitter int, soft404De
 	if err != nil {
 		Error.Printf("%v\n", err)
 	}
-	buf, err := ioutil.ReadAll(host.HTTPResp.Body)
 	if err != nil {
 		Error.Printf("%v\n", err)
 	} else {
