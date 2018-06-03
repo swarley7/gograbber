@@ -127,8 +127,6 @@ func RoutineManager(s *State, ScanChan chan Host, DirbustChan chan Host, Screens
 								host.Soft404RandomPageContents = strings.Split(string(data), " ")
 							}
 						}
-
-						dirbWg.Done()
 						for path, _ := range s.Paths.Set {
 							var p string
 							p = fmt.Sprintf("%v/%v", strings.TrimSuffix(h.Path, "/"), strings.TrimPrefix(path, "/"))
@@ -136,7 +134,6 @@ func RoutineManager(s *State, ScanChan chan Host, DirbustChan chan Host, Screens
 							threadChan <- struct{}{}
 							go HTTPGetter(&dirbWg, h, s.Debug, s.Jitter, s.Soft404Detection, s.StatusCodesIgn, s.Ratio, p, DirbustChan, threadChan, s.ProjectName, s.HTTPResponseDirectory, dWriteChan, s.FollowRedirects)
 						}
-
 					}()
 				} else {
 					for scheme := range s.Protocols.Set {
