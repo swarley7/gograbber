@@ -10,6 +10,29 @@ import (
 	"github.com/swarley7/phantomjs"
 )
 
+func Screenshot(s *State, DirbustChan chan Host, ScreenshotChan chan Host, currTime string, threadChan chan struct{}, wg *sync.WaitGroup) {
+	defer func() {
+		close(ScreenshotChan)
+		wg.Done()
+	}()
+	var screenshotWg = sync.WaitGroup{}
+
+	if !s.Screenshot {
+		for host := range DirbustChan {
+			ScreenshotChan <- host
+		}
+		return
+	}
+	var cnt int
+	for host := range DirbustChan {
+		threadChan <- struct{}{}
+		screenshotWg.Add(1)
+		go ScreenshotAURL(&screenshotWg, s, cnt, host, ScreenshotChan, threadChan)
+		cnt++
+	}
+	screenshotWg.Wait()
+}
+
 // Screenshots a url derived from a Host{} object
 func ScreenshotAURL(wg *sync.WaitGroup, s *State, cnt int, host Host, results chan Host, threads chan struct{}) (err error) {
 	// Ideally this function would not use phantomjs - I've looked at WebKit-go and that looks promising

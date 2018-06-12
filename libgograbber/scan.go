@@ -2,10 +2,42 @@ package libgograbber
 
 import (
 	"fmt"
+	"math/rand"
 	"net"
+	"strings"
 	"sync"
 	"time"
 )
+
+func Scan(s *State, Targets chan Host, ScanChan chan Host, currTime string, threadChan chan struct{}, wg *sync.WaitGroup) {
+	defer func() {
+		close(ScanChan)
+		wg.Done()
+	}()
+	var scanWg = sync.WaitGroup{}
+
+	if !s.Scan {
+		for host := range Targets {
+			ScanChan <- host
+		}
+		return
+	}
+	sWriteChan := make(chan []byte)
+	var portScanOutFile string
+
+	if s.ProjectName != "" {
+		portScanOutFile = fmt.Sprintf("%v/hosts_%v_%v_%v.txt", s.ScanOutputDirectory, strings.ToLower(strings.Replace(s.ProjectName, " ", "_", -1)), currTime, rand.Int63())
+	} else {
+		portScanOutFile = fmt.Sprintf("%v/hosts_%v_%v_%v.txt", s.ScanOutputDirectory, currTime, rand.Int63())
+	}
+	go writerWorker(sWriteChan, portScanOutFile)
+	for host := range s.Targets {
+		scanWg.Add(1)
+		threadChan <- struct{}{}
+		go ConnectHost(&scanWg, s.Timeout, s.Jitter, s.Debug, host, ScanChan, threadChan, sWriteChan)
+	}
+	scanWg.Wait()
+}
 
 // connectHost does the actual TCP connection
 func ConnectHost(wg *sync.WaitGroup, timeout time.Duration, Jitter int, debug bool, host Host, results chan Host, threads chan struct{}, writeChan chan []byte) {
