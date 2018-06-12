@@ -17,7 +17,84 @@ import (
 // func Prefetch(host Host, debug bool, jitter int, protocols StringSet) (h Host, err error) {
 // Removed becuase it just kept breaking... 😔 🤔
 // }
+func Dirbust(s *State, ScanChan chan Host, DirbustChan chan Host, currTime string, threadChan chan struct{}, wg *sync.WaitGroup) {
+	defer func() {
+		close(DirbustChan)
+		wg.Done()
+	}()
+	var dirbWg = sync.WaitGroup{}
 
+	if !s.Dirbust {
+		// We're not doing a dirbust here so just pump the values back into the pipeline for the next phase to consume
+		for host := range ScanChan {
+			if !s.URLProvided {
+				for scheme := range s.Protocols.Set {
+					host.Protocol = scheme
+					DirbustChan <- host
+				}
+			} else {
+				DirbustChan <- host
+			}
+		}
+		return
+	}
+	// Do dirbusting
+	var dirbustOutFile string
+
+	dWriteChan := make(chan []byte)
+
+	if s.ProjectName != "" {
+		dirbustOutFile = fmt.Sprintf("%v/urls_%v_%v_%v.txt", s.DirbustOutputDirectory, strings.ToLower(SanitiseFilename(s.ProjectName)), currTime, rand.Int63())
+	} else {
+		dirbustOutFile = fmt.Sprintf("%v/urls_%v_%v_%v.txt", s.DirbustOutputDirectory, currTime, rand.Int63())
+	}
+	go writerWorker(dWriteChan, dirbustOutFile)
+	// var xwg = sync.WaitGroup{}
+	// dirbWg.Add(1)
+	for host := range ScanChan {
+		dirbWg.Add(1)
+		host.Cookies = s.Cookies
+		for hostHeader, _ := range s.HostHeaders.Set {
+			dirbWg.Add(1)
+			host.HostHeader = hostHeader
+			if s.URLProvided {
+				var h Host
+				h = host
+				// I think the modification inplace of the host object was creating a problem when accessed later in the dir.go file?
+				dirbWg.Add(1)
+				go dirbRunner(s, h, dirbWg, threadChan, DirbustChan, dWriteChan)
+
+			} else {
+				for scheme := range s.Protocols.Set {
+					var h Host
+					h = host
+					h.Protocol = scheme // Weird hack to fix a random race condition...
+					// I think the modification inplace of the host object was creating a problem when accessed later in the dir.go file?
+					dirbWg.Add(1)
+					go dirbRunner(s, h, dirbWg, threadChan, DirbustChan, dWriteChan)
+				}
+			}
+			dirbWg.Done()
+		}
+		dirbWg.Done()
+	}
+	dirbWg.Wait()
+}
+
+func dirbRunner(s *State, h Host, dirbWg sync.WaitGroup, threadChan chan struct{}, DirbustChan chan Host, dWriteChan chan []byte) {
+	defer dirbWg.Done()
+
+	if s.Soft404Detection {
+		h = PerformSoft404Check(h, s.Debug, s.Canary)
+	}
+	for path, _ := range s.Paths.Set {
+		var p string
+		p = fmt.Sprintf("%v/%v", strings.TrimSuffix(h.Path, "/"), strings.TrimPrefix(path, "/"))
+		dirbWg.Add(1)
+		threadChan <- struct{}{}
+		go HTTPGetter(&dirbWg, h, s.Debug, s.Jitter, s.Soft404Detection, s.StatusCodesIgn, s.Ratio, p, DirbustChan, threadChan, s.ProjectName, s.HTTPResponseDirectory, dWriteChan, s.FollowRedirects)
+	}
+}
 func HTTPGetter(wg *sync.WaitGroup, host Host, debug bool, Jitter int, soft404Detection bool, statusCodesIgn IntSet, Ratio float64, path string, results chan Host, threads chan struct{}, ProjectName string, responseDirectory string, writeChan chan []byte, followRedirects bool) {
 	defer func() {
 		<-threads
@@ -102,6 +179,35 @@ func HTTPGetter(wg *sync.WaitGroup, host Host, debug bool, Jitter int, soft404De
 	host.Path = path
 	writeChan <- []byte(fmt.Sprintf("%v\n", Url))
 	results <- host
+}
+
+func PerformSoft404Check(h Host, debug bool, canary string) Host {
+	var knary string
+	if canary != "" {
+		knary = canary
+	} else {
+		knary = RandString()
+	}
+	randURL := fmt.Sprintf("%v://%v:%v/%v", h.Protocol, h.HostAddr, h.Port, knary)
+	if debug {
+		Debug.Printf("Soft404 checking [%v]\n", randURL)
+	}
+	_, randResp, err := h.makeHTTPRequest(randURL)
+	if err != nil {
+		if debug {
+			Error.Printf("Soft404 check failed... [%v] Err:[%v] \n", randURL, err)
+		}
+	} else {
+		defer randResp.Body.Close()
+		data, err := ioutil.ReadAll(randResp.Body)
+		if err != nil {
+			Error.Printf("uhhh... [%v]\n", err)
+			return h
+		}
+		h.Soft404RandomURL = randURL
+		h.Soft404RandomPageContents = strings.Split(string(data), " ")
+	}
+	return h
 }
 
 func detectSoft404(resp *http.Response, randRespData []string) (ratio float64) {
