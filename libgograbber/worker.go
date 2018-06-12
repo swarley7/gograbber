@@ -155,7 +155,7 @@ func RoutineManager(s *State, ScanChan chan Host, DirbustChan chan Host, Screens
 								if s.Debug {
 									Debug.Printf("Soft404 checking [%v]\n", randURL)
 								}
-								_, randResp, err := host.makeHTTPRequest(randURL)
+								_, randResp, err := h.makeHTTPRequest(randURL)
 								if err != nil {
 									if s.Debug {
 										Error.Printf("Soft404 check failed... [%v] Err:[%v] \n", randURL, err)
@@ -167,8 +167,8 @@ func RoutineManager(s *State, ScanChan chan Host, DirbustChan chan Host, Screens
 										Error.Printf("uhhh... [%v]\n", err)
 										return
 									}
-									host.Soft404RandomURL = randURL
-									host.Soft404RandomPageContents = strings.Split(string(data), " ")
+									h.Soft404RandomURL = randURL
+									h.Soft404RandomPageContents = strings.Split(string(data), " ")
 								}
 							}
 
