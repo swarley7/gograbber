@@ -16,7 +16,6 @@ import (
 
 // Initialise sets up the program's state
 func Initialise(s *State, ports string, wordlist string, statusCodesIgn string, protocols string, timeout int, AdvancedUsage bool, easy bool, HostHeaderFile string) {
-
 	if AdvancedUsage {
 
 		var Usage = func() {
@@ -233,9 +232,9 @@ func Start(s State) {
 	os.Mkdir(s.ReportDirectory, 0755) // drwxr-xr-x
 	reportFile := MarkdownReport(&s, ScreenshotChan)
 	wg.Wait()
-	currTime := time.Now()
+	currentTime := time.Now()
 	fmt.Printf(LineSep())
-	Info.Printf("Gograbber completed in [%v] seconds\n", g.Sprintf("%v", currTime.Sub(s.StartTime)))
+	Info.Printf("Gograbber completed in [%v] seconds\n", g.Sprintf("%v", currentTime.Sub(s.StartTime)))
 	Info.Printf("Report written to: [%v]\n", g.Sprintf("%s", reportFile))
 	fmt.Printf(LineSep())
 }

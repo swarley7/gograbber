@@ -6,6 +6,7 @@ import (
 	"net/http"
 	_ "net/http/pprof"
 	"os"
+	"time"
 
 	"github.com/swarley7/gograbber/libgograbber"
 	// "./libgograbber"
@@ -14,6 +15,7 @@ import (
 func parseCMDLine() *libgograbber.State {
 	s := libgograbber.State{Ports: libgograbber.IntSet{Set: map[int]bool{}}}
 	s.Version = "Alpha (0.3a)"
+	s.StartTime = time.Now()
 
 	var ports string
 	var wordlist string
