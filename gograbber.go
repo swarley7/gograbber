@@ -56,6 +56,7 @@ func parseCMDLine() *libgograbber.State {
 	flag.StringVar(&wordlist, "w", "", "Wordlist file containing line separated endpoints to directory bruteforce")
 	flag.Float64Var(&s.Ratio, "r", 0.95, "Soft 404 detection comparison ratio.")
 	flag.BoolVar(&s.Soft404Detection, "soft404", true, "Perform soft 404 detection")
+	flag.StringVar(&s.Canary, "canary", "", "Canary value for soft 404 detection")
 
 	// Reporting
 	flag.StringVar(&s.OutputDirectory, "o", "gograbber_output", "Directory to store output in")
