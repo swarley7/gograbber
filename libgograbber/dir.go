@@ -46,7 +46,7 @@ func Dirbust(s *State, ScanChan chan Host, DirbustChan chan Host, currTime strin
 	if s.ProjectName != "" {
 		dirbustOutFile = fmt.Sprintf("%v/urls_%v_%v_%v.txt", s.DirbustOutputDirectory, strings.ToLower(SanitiseFilename(s.ProjectName)), currTime, rand.Int63())
 	} else {
-		dirbustOutFile = fmt.Sprintf("%v/urls_%v_%v_%v.txt", s.DirbustOutputDirectory, currTime, rand.Int63())
+		dirbustOutFile = fmt.Sprintf("%v/urls_%v_%v.txt", s.DirbustOutputDirectory, currTime, rand.Int63())
 	}
 	go writerWorker(dWriteChan, dirbustOutFile)
 	// var xwg = sync.WaitGroup{}

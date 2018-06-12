@@ -29,7 +29,7 @@ func Scan(s *State, Targets chan Host, ScanChan chan Host, currTime string, thre
 	if s.ProjectName != "" {
 		portScanOutFile = fmt.Sprintf("%v/hosts_%v_%v_%v.txt", s.ScanOutputDirectory, strings.ToLower(strings.Replace(s.ProjectName, " ", "_", -1)), currTime, rand.Int63())
 	} else {
-		portScanOutFile = fmt.Sprintf("%v/hosts_%v_%v_%v.txt", s.ScanOutputDirectory, currTime, rand.Int63())
+		portScanOutFile = fmt.Sprintf("%v/hosts_%v_%v.txt", s.ScanOutputDirectory, currTime, rand.Int63())
 	}
 	go writerWorker(sWriteChan, portScanOutFile)
 	for host := range s.Targets {
