@@ -50,19 +50,17 @@ func Dirbust(s *State, ScanChan chan Host, DirbustChan chan Host, currTime strin
 	}
 	go writerWorker(dWriteChan, dirbustOutFile)
 	// var xwg = sync.WaitGroup{}
-	// dirbWg.Add(1)
+	dirbWg.Add(1)
 	for host := range ScanChan {
-		dirbWg.Add(1)
 		host.Cookies = s.Cookies
 		for hostHeader, _ := range s.HostHeaders.Set {
-			dirbWg.Add(1)
 			host.HostHeader = hostHeader
 			if s.URLProvided {
 				var h Host
 				h = host
 				// I think the modification inplace of the host object was creating a problem when accessed later in the dir.go file?
 				dirbWg.Add(1)
-				go dirbRunner(s, h, dirbWg, threadChan, DirbustChan, dWriteChan)
+				go dirbRunner(s, h, &dirbWg, threadChan, DirbustChan, dWriteChan)
 
 			} else {
 				for scheme := range s.Protocols.Set {
@@ -71,17 +69,16 @@ func Dirbust(s *State, ScanChan chan Host, DirbustChan chan Host, currTime strin
 					h.Protocol = scheme // Weird hack to fix a random race condition...
 					// I think the modification inplace of the host object was creating a problem when accessed later in the dir.go file?
 					dirbWg.Add(1)
-					go dirbRunner(s, h, dirbWg, threadChan, DirbustChan, dWriteChan)
+					go dirbRunner(s, h, &dirbWg, threadChan, DirbustChan, dWriteChan)
 				}
 			}
-			dirbWg.Done()
 		}
 		dirbWg.Done()
 	}
 	dirbWg.Wait()
 }
 
-func dirbRunner(s *State, h Host, dirbWg sync.WaitGroup, threadChan chan struct{}, DirbustChan chan Host, dWriteChan chan []byte) {
+func dirbRunner(s *State, h Host, dirbWg *sync.WaitGroup, threadChan chan struct{}, DirbustChan chan Host, dWriteChan chan []byte) {
 	defer dirbWg.Done()
 
 	if s.Soft404Detection {
@@ -92,7 +89,7 @@ func dirbRunner(s *State, h Host, dirbWg sync.WaitGroup, threadChan chan struct{
 		p = fmt.Sprintf("%v/%v", strings.TrimSuffix(h.Path, "/"), strings.TrimPrefix(path, "/"))
 		dirbWg.Add(1)
 		threadChan <- struct{}{}
-		go HTTPGetter(&dirbWg, h, s.Debug, s.Jitter, s.Soft404Detection, s.StatusCodesIgn, s.Ratio, p, DirbustChan, threadChan, s.ProjectName, s.HTTPResponseDirectory, dWriteChan, s.FollowRedirects)
+		go HTTPGetter(dirbWg, h, s.Debug, s.Jitter, s.Soft404Detection, s.StatusCodesIgn, s.Ratio, p, DirbustChan, threadChan, s.ProjectName, s.HTTPResponseDirectory, dWriteChan, s.FollowRedirects)
 	}
 }
 func HTTPGetter(wg *sync.WaitGroup, host Host, debug bool, Jitter int, soft404Detection bool, statusCodesIgn IntSet, Ratio float64, path string, results chan Host, threads chan struct{}, ProjectName string, responseDirectory string, writeChan chan []byte, followRedirects bool) {
