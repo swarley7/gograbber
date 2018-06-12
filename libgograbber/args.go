@@ -34,6 +34,7 @@ type State struct {
 	NoStatus               bool
 	Hosts                  StringSet
 	InputFile              string
+	Canary                 string
 	Debug                  bool
 	ExcludeList            []string
 	Password               string

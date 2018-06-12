@@ -85,7 +85,7 @@ func dirbRunner(s *State, h Host, dirbWg sync.WaitGroup, threadChan chan struct{
 	defer dirbWg.Done()
 
 	if s.Soft404Detection {
-		h = PerformSoft404Check(h, s.Debug)
+		h = PerformSoft404Check(h, s.Debug, s.Canary)
 	}
 	for path, _ := range s.Paths.Set {
 		var p string
@@ -181,8 +181,14 @@ func HTTPGetter(wg *sync.WaitGroup, host Host, debug bool, Jitter int, soft404De
 	results <- host
 }
 
-func PerformSoft404Check(h Host, debug bool) Host {
-	randURL := fmt.Sprintf("%v://%v:%v/%v", h.Protocol, h.HostAddr, h.Port, RandString())
+func PerformSoft404Check(h Host, debug bool, canary string) Host {
+	var knary string
+	if canary != "" {
+		knary = canary
+	} else {
+		knary = RandString()
+	}
+	randURL := fmt.Sprintf("%v://%v:%v/%v", h.Protocol, h.HostAddr, h.Port, knary)
 	if debug {
 		Debug.Printf("Soft404 checking [%v]\n", randURL)
 	}
