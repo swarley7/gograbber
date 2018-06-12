@@ -8,6 +8,7 @@ import (
 )
 
 type State struct {
+	Canary                 string
 	Cookies                string
 	Expanded               bool
 	Extensions             []string
