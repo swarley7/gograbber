@@ -110,7 +110,11 @@ func RoutineManager(s *State, ScanChan chan Host, DirbustChan chan Host, Screens
 						// defer xwg.Done()
 
 						if s.Soft404Detection {
-							randURL := fmt.Sprintf("%v://%v:%v/%v", h.Protocol, h.HostAddr, h.Port, RandString())
+							knary := RandString()
+							if s.Canary != "" {
+								knary = s.Canary
+							}
+							randURL := fmt.Sprintf("%v://%v:%v/%v", h.Protocol, h.HostAddr, h.Port, knary)
 							if s.Debug {
 								Debug.Printf("Soft404 checking [%v]\n", randURL)
 							}
@@ -151,7 +155,11 @@ func RoutineManager(s *State, ScanChan chan Host, DirbustChan chan Host, Screens
 							// defer xwg.Done()
 
 							if s.Soft404Detection {
-								randURL := fmt.Sprintf("%v://%v:%v/%v", h.Protocol, h.HostAddr, h.Port, RandString())
+								knary := RandString()
+								if s.Canary != "" {
+									knary = s.Canary
+								}
+								randURL := fmt.Sprintf("%v://%v:%v/%v", h.Protocol, h.HostAddr, h.Port, knary)
 								if s.Debug {
 									Debug.Printf("Soft404 checking [%v]\n", randURL)
 								}
