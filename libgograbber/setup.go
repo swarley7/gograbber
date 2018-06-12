@@ -104,6 +104,10 @@ func Initialise(s *State, ports string, wordlist string, statusCodesIgn string, 
 	} else {
 		s.Paths.Add("")
 	}
+	s.StatusCodesIgn = IntSet{map[int]bool{}}
+	for _, code := range StrArrToInt(strings.Split(statusCodesIgn, ",")) {
+		s.StatusCodesIgn.Add(code)
+	}
 
 	if s.URLProvided { // A url and/or file full of urls was supplied - treat them as gospel
 		// wg := sync.WaitGroup{}
@@ -163,11 +167,6 @@ func Initialise(s *State, ports string, wordlist string, statusCodesIgn string, 
 		}
 		s.Hosts = targetList
 	}
-	s.StatusCodesIgn = IntSet{map[int]bool{}}
-	for _, code := range StrArrToInt(strings.Split(statusCodesIgn, ",")) {
-		s.StatusCodesIgn.Add(code)
-	}
-
 	// c2 := make(chan []Host)
 	s.Protocols = StringSet{map[string]bool{}}
 	for _, p := range strings.Split(protocols, ",") {

@@ -14,7 +14,7 @@ import (
 
 func parseCMDLine() *libgograbber.State {
 	s := libgograbber.State{Ports: libgograbber.IntSet{Set: map[int]bool{}}}
-	s.Version = "Alpha (0.2a)"
+	s.Version = "Alpha (0.3a)"
 
 	var ports string
 	var wordlist string
@@ -30,7 +30,7 @@ func parseCMDLine() *libgograbber.State {
 	// Commandline arguments
 	// Global
 	flag.IntVar(&s.Threads, "t", 500, "Number of concurrent threads (actually goroutines, so not full OS threads). A typical system can support a couple of thousand with very little performance impact.")
-	flag.IntVar(&timeout, "T", 2, "Timeout (seconds) for HTTP/TCP connections")
+	flag.IntVar(&timeout, "T", 20, "Timeout (seconds) for HTTP/TCP connections")
 
 	flag.IntVar(&s.Jitter, "j", 0, "Be nice to serverz; introduce random delay (in ms) between requests")
 	// flag.IntVar(&s.Sleep, "sleep", 0, "Minimum sleep (in ms) between requests")
