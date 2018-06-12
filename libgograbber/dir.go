@@ -50,8 +50,8 @@ func Dirbust(s *State, ScanChan chan Host, DirbustChan chan Host, currTime strin
 	}
 	go writerWorker(dWriteChan, dirbustOutFile)
 	// var xwg = sync.WaitGroup{}
-	dirbWg.Add(1)
 	for host := range ScanChan {
+		dirbWg.Add(1)
 		host.Cookies = s.Cookies
 		for hostHeader, _ := range s.HostHeaders.Set {
 			host.HostHeader = hostHeader
