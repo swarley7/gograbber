@@ -6,7 +6,6 @@ import (
 	"net/http"
 	_ "net/http/pprof"
 	"os"
-	"time"
 
 	"github.com/swarley7/gograbber/libgograbber"
 	// "./libgograbber"
@@ -84,7 +83,7 @@ func parseCMDLine() *libgograbber.State {
 	flag.Parse()
 	libgograbber.InitColours()
 	libgograbber.PrintBanner(&s)
-	s.StartTime = time.Now()
+
 	if s.Debug {
 		go func() {
 			libgograbber.Debug.Println("Profiler running on: localhost:6060")
