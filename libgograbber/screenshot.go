@@ -18,6 +18,7 @@ func Screenshot(s *State, DirbustChan chan Host, ScreenshotChan chan Host, currT
 	var screenshotWg = sync.WaitGroup{}
 
 	if !s.Screenshot {
+		// We're not doing Screenshotting here so just pump the values back into the pipeline for the next phase to consume
 		for host := range DirbustChan {
 			ScreenshotChan <- host
 		}

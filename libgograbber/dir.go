@@ -25,13 +25,13 @@ func Dirbust(s *State, ScanChan chan Host, DirbustChan chan Host, currTime strin
 	var dirbWg = sync.WaitGroup{}
 
 	if !s.Dirbust {
+		// We're not doing a dirbust here so just pump the values back into the pipeline for the next phase to consume
 		for host := range ScanChan {
 			if !s.URLProvided {
 				for scheme := range s.Protocols.Set {
 					host.Protocol = scheme
 					DirbustChan <- host
 				}
-
 			} else {
 				DirbustChan <- host
 			}
@@ -62,80 +62,16 @@ func Dirbust(s *State, ScanChan chan Host, DirbustChan chan Host, currTime strin
 				h = host
 				// I think the modification inplace of the host object was creating a problem when accessed later in the dir.go file?
 				dirbWg.Add(1)
-				go func() {
-					defer dirbWg.Done()
-					// defer xwg.Done()
+				go dirbRunner(s, h, dirbWg, threadChan, DirbustChan, dWriteChan)
 
-					if s.Soft404Detection {
-						randURL := fmt.Sprintf("%v://%v:%v/%v", h.Protocol, h.HostAddr, h.Port, RandString())
-						if s.Debug {
-							Debug.Printf("Soft404 checking [%v]\n", randURL)
-						}
-						_, randResp, err := h.makeHTTPRequest(randURL)
-						if err != nil {
-							if s.Debug {
-								Error.Printf("Soft404 check failed... [%v] Err:[%v] \n", randURL, err)
-							}
-						} else {
-							defer randResp.Body.Close()
-							data, err := ioutil.ReadAll(randResp.Body)
-							if err != nil {
-								Error.Printf("uhhh... [%v]\n", err)
-								return
-							}
-							h.Soft404RandomURL = randURL
-							h.Soft404RandomPageContents = strings.Split(string(data), " ")
-						}
-					}
-					for path, _ := range s.Paths.Set {
-						var p string
-						p = fmt.Sprintf("%v/%v", strings.TrimSuffix(h.Path, "/"), strings.TrimPrefix(path, "/"))
-						dirbWg.Add(1)
-						threadChan <- struct{}{}
-						go HTTPGetter(&dirbWg, h, s.Debug, s.Jitter, s.Soft404Detection, s.StatusCodesIgn, s.Ratio, p, DirbustChan, threadChan, s.ProjectName, s.HTTPResponseDirectory, dWriteChan, s.FollowRedirects)
-					}
-				}()
 			} else {
 				for scheme := range s.Protocols.Set {
 					var h Host
 					h = host
 					h.Protocol = scheme // Weird hack to fix a random race condition...
 					// I think the modification inplace of the host object was creating a problem when accessed later in the dir.go file?
-					// xwg.Add(1)
 					dirbWg.Add(1)
-					go func() {
-						defer dirbWg.Done()
-						// defer xwg.Done()
-
-						if s.Soft404Detection {
-							randURL := fmt.Sprintf("%v://%v:%v/%v", h.Protocol, h.HostAddr, h.Port, RandString())
-							if s.Debug {
-								Debug.Printf("Soft404 checking [%v]\n", randURL)
-							}
-							_, randResp, err := h.makeHTTPRequest(randURL)
-							if err != nil {
-								if s.Debug {
-									Error.Printf("Soft404 check failed... [%v] Err:[%v] \n", randURL, err)
-								}
-							} else {
-								defer randResp.Body.Close()
-								data, err := ioutil.ReadAll(randResp.Body)
-								if err != nil {
-									Error.Printf("uhhh... [%v]\n", err)
-									return
-								}
-								h.Soft404RandomURL = randURL
-								h.Soft404RandomPageContents = strings.Split(string(data), " ")
-							}
-						}
-
-						for path, _ := range s.Paths.Set {
-							dirbWg.Add(1)
-							threadChan <- struct{}{}
-							go HTTPGetter(&dirbWg, h, s.Debug, s.Jitter, s.Soft404Detection, s.StatusCodesIgn, s.Ratio, path, DirbustChan, threadChan, s.ProjectName, s.HTTPResponseDirectory, dWriteChan, s.FollowRedirects)
-						}
-
-					}()
+					go dirbRunner(s, h, dirbWg, threadChan, DirbustChan, dWriteChan)
 				}
 			}
 			dirbWg.Done()
@@ -145,6 +81,20 @@ func Dirbust(s *State, ScanChan chan Host, DirbustChan chan Host, currTime strin
 	dirbWg.Wait()
 }
 
+func dirbRunner(s *State, h Host, dirbWg sync.WaitGroup, threadChan chan struct{}, DirbustChan chan Host, dWriteChan chan []byte) {
+	defer dirbWg.Done()
+
+	if s.Soft404Detection {
+		h = PerformSoft404Check(h, s.Debug)
+	}
+	for path, _ := range s.Paths.Set {
+		var p string
+		p = fmt.Sprintf("%v/%v", strings.TrimSuffix(h.Path, "/"), strings.TrimPrefix(path, "/"))
+		dirbWg.Add(1)
+		threadChan <- struct{}{}
+		go HTTPGetter(&dirbWg, h, s.Debug, s.Jitter, s.Soft404Detection, s.StatusCodesIgn, s.Ratio, p, DirbustChan, threadChan, s.ProjectName, s.HTTPResponseDirectory, dWriteChan, s.FollowRedirects)
+	}
+}
 func HTTPGetter(wg *sync.WaitGroup, host Host, debug bool, Jitter int, soft404Detection bool, statusCodesIgn IntSet, Ratio float64, path string, results chan Host, threads chan struct{}, ProjectName string, responseDirectory string, writeChan chan []byte, followRedirects bool) {
 	defer func() {
 		<-threads
@@ -229,6 +179,29 @@ func HTTPGetter(wg *sync.WaitGroup, host Host, debug bool, Jitter int, soft404De
 	host.Path = path
 	writeChan <- []byte(fmt.Sprintf("%v\n", Url))
 	results <- host
+}
+
+func PerformSoft404Check(h Host, debug bool) Host {
+	randURL := fmt.Sprintf("%v://%v:%v/%v", h.Protocol, h.HostAddr, h.Port, RandString())
+	if debug {
+		Debug.Printf("Soft404 checking [%v]\n", randURL)
+	}
+	_, randResp, err := h.makeHTTPRequest(randURL)
+	if err != nil {
+		if debug {
+			Error.Printf("Soft404 check failed... [%v] Err:[%v] \n", randURL, err)
+		}
+	} else {
+		defer randResp.Body.Close()
+		data, err := ioutil.ReadAll(randResp.Body)
+		if err != nil {
+			Error.Printf("uhhh... [%v]\n", err)
+			return h
+		}
+		h.Soft404RandomURL = randURL
+		h.Soft404RandomPageContents = strings.Split(string(data), " ")
+	}
+	return h
 }
 
 func detectSoft404(resp *http.Response, randRespData []string) (ratio float64) {

@@ -17,6 +17,7 @@ func Scan(s *State, Targets chan Host, ScanChan chan Host, currTime string, thre
 	var scanWg = sync.WaitGroup{}
 
 	if !s.Scan {
+		// We're not doing a Scan here so just pump the values back into the pipeline for the next phase to consume
 		for host := range Targets {
 			ScanChan <- host
 		}
