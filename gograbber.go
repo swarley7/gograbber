@@ -79,7 +79,7 @@ func parseCMDLine() *libgograbber.State {
 	flag.IntVar(&s.ScreenshotQuality, "Q", 50, "Screenshot quality as a percentage (higher means more megatronz per screenshot).")
 	flag.StringVar(&s.PhantomJSPath, "phantomjs", "phantomjs", "Path to phantomjs binary for rendering web pages")
 	flag.BoolVar(&AdvancedUsage, "hh", false, "Print advanced usage details with examples!")
-	flag.BoolVar(&s.FollowRedirects, "fr", false, "Follow redirects")
+	flag.BoolVar(&s.FollowRedirects, "fr", true, "Follow redirects")
 	flag.StringVar(&s.ScreenshotFileType, "screenshot_ext", "png", "Filetype for screenshots (valid are pdf, png, jpg)")
 
 	flag.BoolVar(&s.IgnoreSSLErrors, "k", true, "Ignore SSL/TLS cert validation errors (super secure amirite?). Look, if you're using this app you probably know the risks, and let's face it, dgaf.")
