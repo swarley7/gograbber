@@ -28,7 +28,7 @@ func parseCMDLine() *libgograbber.State {
 	var HostHeaderFile string
 	var httpHeaders string
 	var extensions string
-	libgograbber.InitLogger(os.Stdout, os.Stdout, os.Stdout, os.Stdout, os.Stderr)
+	libgograbber.InitLogger(os.Stdout, os.Stderr, os.Stderr, os.Stderr, os.Stderr)
 
 	// Commandline arguments
 	// Global
