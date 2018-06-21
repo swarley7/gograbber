@@ -14,7 +14,7 @@ import (
 
 func parseCMDLine() *libgograbber.State {
 	s := libgograbber.State{Ports: libgograbber.IntSet{Set: map[int]bool{}}}
-	s.Version = "Alpha (0.3a)"
+	s.Version = "Beta (0.4b)"
 	s.StartTime = time.Now()
 
 	var ports string
