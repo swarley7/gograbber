@@ -60,6 +60,7 @@ type Host struct {
 	HostHeader                string
 	UserAgent                 string
 	Cookies                   string
+	RequestHeaders            map[string]string
 }
 
 func (host *Host) PrefetchHash() (h string) {
@@ -432,9 +433,10 @@ func (host *Host) makeHTTPRequest(url string) (req *http.Request, resp *http.Res
 	}
 	// TODO: support additional custom headers
 	//	- Will probably require a cmdline arg for JSON header object or something?
-	// if host.RequestHeaders != "" {
-	// 	req.Header =
-	// }
+	for header, value := range host.RequestHeaders {
+		req.Header.Set(header, value)
+	}
+	req.Header.Set("User-Agent", host.UserAgent)
 	resp, err = cl.Do(req)
 	if err != nil {
 		return

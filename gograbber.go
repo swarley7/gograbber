@@ -26,6 +26,8 @@ func parseCMDLine() *libgograbber.State {
 	var AdvancedUsage bool
 	var easy bool
 	var HostHeaderFile string
+	var httpHeaders string
+	var extensions string
 	libgograbber.InitLogger(os.Stdout, os.Stdout, os.Stdout, os.Stdout, os.Stderr)
 
 	// Commandline arguments
@@ -49,7 +51,9 @@ func parseCMDLine() *libgograbber.State {
 	// Dirbust related
 	flag.BoolVar(&s.Dirbust, "dirbust", false, "Perform dirbust-like directory brute force of hosts using provided wordlist")
 	flag.StringVar(&HostHeaderFile, "H", "", "Optional: Supply a file containing custom host headers that you would like to issue with each request (maybe for bypassing WAF/CDN/VHOST garbage?)")
+	flag.StringVar(&httpHeaders, "headers", "", "Optional JSON object specifying arbitrary HTTP headers (e.g. \"{\"X-Forwarded-For\":\"127.0.0.1\",\"X-Test-McGee\":\"7\"})")
 	flag.StringVar(&protocols, "P", "http,https", "If provided, each host will be tested for the given protocol")
+	flag.StringVar(&extensions, "e", "", "Comma separated list of file extensions to append to each request (e.g. \"php,jsp,aspx\").")
 	flag.StringVar(&statusCodesIgn, "s", "400,401,403,404,407,502", "HTTP Status codes to ignore")
 	flag.StringVar(&statusCodes, "S", "200,301,302,405,500", "HTTP Status codes to record. Currently does NOTHING (dw about it)")
 	flag.StringVar(&s.URLFile, "U", "", "Input filename of line seperated complete URLs to test (overwrites -i, -p, -P, -scan)")
@@ -92,7 +96,7 @@ func parseCMDLine() *libgograbber.State {
 			http.ListenAndServe("localhost:6060", nil)
 		}()
 	}
-	libgograbber.Initialise(&s, ports, wordlist, statusCodesIgn, protocols, timeout, AdvancedUsage, easy, HostHeaderFile)
+	libgograbber.Initialise(&s, ports, wordlist, statusCodesIgn, protocols, timeout, AdvancedUsage, easy, HostHeaderFile, httpHeaders, extensions)
 	return &s
 }
 

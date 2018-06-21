@@ -2,6 +2,7 @@ package libgograbber
 
 import (
 	"crypto/tls"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"net/http"
@@ -15,7 +16,7 @@ import (
 )
 
 // Initialise sets up the program's state
-func Initialise(s *State, ports string, wordlist string, statusCodesIgn string, protocols string, timeout int, AdvancedUsage bool, easy bool, HostHeaderFile string) {
+func Initialise(s *State, ports string, wordlist string, statusCodesIgn string, protocols string, timeout int, AdvancedUsage bool, easy bool, HostHeaderFile string, httpHeaders string, extensions string) {
 	if AdvancedUsage {
 
 		var Usage = func() {
@@ -53,6 +54,11 @@ func Initialise(s *State, ports string, wordlist string, statusCodesIgn string, 
 		s.NumPhantomProcs = 7
 		ports = "top"
 	}
+	s.Extensions = StringSet{map[string]bool{}}
+	for _, p := range strings.Split(extensions, ",") {
+		s.Extensions.Add(p)
+	}
+	s.Extensions.Add("")
 	s.HostHeaders = StringSet{map[string]bool{}}
 	if HostHeaderFile != "" {
 		hostHeaders, err := GetDataFromFile(HostHeaderFile)
@@ -66,6 +72,14 @@ func Initialise(s *State, ports string, wordlist string, statusCodesIgn string, 
 	} else {
 		s.HostHeaders.Add("")
 	}
+	s.HttpHeaders = map[string]string{}
+	if httpHeaders != "" {
+		err := json.Unmarshal([]byte(httpHeaders), &s.HttpHeaders)
+		if err != nil {
+			Error.Printf("Your JSON looks pretty bad eh. You should do something about that: [%v]", httpHeaders)
+		}
+		// Debug.Println(s.HttpHeaders)
+	}
 
 	s.Timeout = time.Duration(timeout) * time.Second
 
@@ -78,6 +92,9 @@ func Initialise(s *State, ports string, wordlist string, statusCodesIgn string, 
 	cl = http.Client{
 		Transport: tx,
 		Timeout:   s.Timeout,
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
 	}
 
 	s.Targets = make(chan Host)
@@ -171,6 +188,7 @@ func Initialise(s *State, ports string, wordlist string, statusCodesIgn string, 
 	for _, p := range strings.Split(protocols, ",") {
 		s.Protocols.Add(p)
 	}
+
 	go GenerateURLs(s.Hosts, s.Ports, &s.Paths, s.Targets)
 	// fmt.Println(s)
 	if !s.Dirbust && !s.Scan && !s.Screenshot && !s.URLProvided {

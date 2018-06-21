@@ -11,7 +11,7 @@ type State struct {
 	Canary                 string
 	Cookies                string
 	Expanded               bool
-	Extensions             []string
+	Extensions             StringSet
 	FollowRedirect         bool
 	PhantomProcesses       []phantomjs.Process
 	ScreenshotQuality      int
@@ -20,6 +20,7 @@ type State struct {
 	FollowRedirects        bool
 	ReportDirectory        string
 	HostHeaders            StringSet
+	HttpHeaders            map[string]string
 	ScanOutputDirectory    string
 	ProjectName            string
 	DirbustOutputDirectory string

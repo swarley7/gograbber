@@ -52,6 +52,8 @@ func Dirbust(s *State, ScanChan chan Host, DirbustChan chan Host, currTime strin
 	// var xwg = sync.WaitGroup{}
 	for host := range ScanChan {
 		dirbWg.Add(1)
+		host.RequestHeaders = s.HttpHeaders
+		host.UserAgent = s.UserAgent
 		host.Cookies = s.Cookies
 		for hostHeader, _ := range s.HostHeaders.Set {
 			host.HostHeader = hostHeader
@@ -87,9 +89,20 @@ func dirbRunner(s *State, h Host, dirbWg *sync.WaitGroup, threadChan chan struct
 	for path, _ := range s.Paths.Set {
 		var p string
 		p = fmt.Sprintf("%v/%v", strings.TrimSuffix(h.Path, "/"), strings.TrimPrefix(path, "/"))
-		dirbWg.Add(1)
-		threadChan <- struct{}{}
-		go HTTPGetter(dirbWg, h, s.Debug, s.Jitter, s.Soft404Detection, s.StatusCodesIgn, s.Ratio, p, DirbustChan, threadChan, s.ProjectName, s.HTTPResponseDirectory, dWriteChan, s.FollowRedirects)
+		// Add custom file extension to each request specified using -e flag
+		for ext, _ := range s.Extensions.Set {
+			var extPath string
+			ext = strings.TrimPrefix(ext, ".")
+			if len(ext) == 0 {
+				extPath = p
+			} else {
+				extPath = fmt.Sprintf("%s.%s", p, ext)
+			}
+			dirbWg.Add(1)
+			threadChan <- struct{}{}
+			go HTTPGetter(dirbWg, h, s.Debug, s.Jitter, s.Soft404Detection, s.StatusCodesIgn, s.Ratio, extPath, DirbustChan, threadChan, s.ProjectName, s.HTTPResponseDirectory, dWriteChan, s.FollowRedirects)
+		}
+
 	}
 }
 func HTTPGetter(wg *sync.WaitGroup, host Host, debug bool, Jitter int, soft404Detection bool, statusCodesIgn IntSet, Ratio float64, path string, results chan Host, threads chan struct{}, ProjectName string, responseDirectory string, writeChan chan []byte, followRedirects bool) {
@@ -120,10 +133,12 @@ func HTTPGetter(wg *sync.WaitGroup, host Host, debug bool, Jitter int, soft404De
 			host.HTTPResp.Body.Close()
 			return
 		}
+		// Debug.Printf("host.HTTPResp.StatusCode: [%d]", host.HTTPResp.StatusCode)
 		if host.HTTPResp.StatusCode >= 300 && host.HTTPResp.StatusCode < 400 && followRedirects {
 			host.HTTPResp.Body.Close()
 			x, err := host.HTTPResp.Location()
 			if err == nil {
+				Good.Printf("[%v] Redirect [%v]->[%v]", y.Sprintf("%d", host.HTTPResp.StatusCode), g.Sprintf("%s", nextUrl), g.Sprintf("%s", x.String()))
 				nextUrl = x.String()
 			} else {
 				break
