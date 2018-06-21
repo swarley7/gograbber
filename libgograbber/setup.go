@@ -111,7 +111,6 @@ func Initialise(s *State, ports string, wordlist string, statusCodesIgn string, 
 		pathData, err := GetDataFromFile(wordlist)
 		if err != nil {
 			Error.Println(err)
-
 			panic(err)
 		}
 		for _, path := range pathData {

@@ -123,7 +123,9 @@ func HTTPGetter(wg *sync.WaitGroup, host Host, debug bool, Jitter int, soft404De
 	var err error
 	nextUrl := Url
 	var i int
-	for i < 5 { // number of times to follow redirect
+	var redirs []string
+	numRedirects := 5
+	for i < numRedirects { // number of times to follow redirect
 
 		host.HTTPReq, host.HTTPResp, err = host.makeHTTPRequest(nextUrl)
 		if err != nil {
@@ -138,13 +140,17 @@ func HTTPGetter(wg *sync.WaitGroup, host Host, debug bool, Jitter int, soft404De
 			host.HTTPResp.Body.Close()
 			x, err := host.HTTPResp.Location()
 			if err == nil {
-				Good.Printf("[%v] Redirect [%v]->[%v]", y.Sprintf("%d", host.HTTPResp.StatusCode), g.Sprintf("%s", nextUrl), g.Sprintf("%s", x.String()))
+				redirs = append(redirs, fmt.Sprintf("[%v - %s]", y.Sprintf("%d", host.HTTPResp.StatusCode), g.Sprintf("%s", nextUrl)))
+				writeChan <- []byte(fmt.Sprintf("%v\n", nextUrl))
 				nextUrl = x.String()
 			} else {
 				break
 			}
 		} else {
 			defer host.HTTPResp.Body.Close()
+			if followRedirects {
+				Good.Printf("Redirect %v->[%v - %v]", strings.Join(redirs, "->"), y.Sprintf("%d", host.HTTPResp.StatusCode), g.Sprintf("%s", nextUrl))
+			}
 			Url = nextUrl
 			break
 		}
@@ -190,6 +196,7 @@ func HTTPGetter(wg *sync.WaitGroup, host Host, debug bool, Jitter int, soft404De
 	}
 	host.Path = path
 	writeChan <- []byte(fmt.Sprintf("%v\n", Url))
+
 	results <- host
 }
 
