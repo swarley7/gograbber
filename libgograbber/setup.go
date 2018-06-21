@@ -66,7 +66,8 @@ func Initialise(s *State, ports string, wordlist string, statusCodesIgn string, 
 			Error.Println(err)
 			panic(err)
 		}
-		for _, hostHeader := range hostHeaders {
+		hostHeadersExpanded := ExpandHosts(hostHeaders)
+		for hostHeader, _ := range hostHeadersExpanded.Set {
 			s.HostHeaders.Add(hostHeader)
 		}
 	} else {

@@ -8,8 +8,8 @@ import (
 	"os"
 	"time"
 
-	"./libgograbber"
-	// "github.com/swarley7/gograbber/libgograbber"
+	// "./libgograbber"
+	"github.com/swarley7/gograbber/libgograbber"
 )
 
 func parseCMDLine() *libgograbber.State {
