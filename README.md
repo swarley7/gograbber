@@ -86,6 +86,7 @@ Examples for ./gograbber:
 - OJ Reeves: this project borrows heavily from `github.com/OJ/gobuster` (which is awesome, btw.) so thanks!
 - Aquatone (michenriksen): this project was heavily inspired by aquatone (which is also awesome)
 - C_Sto: thx for forcing me to learn Golang and laughing at my extreme incompetence
+    - *Note you should also check out C_Sto's awesome recursebuster (https://github.com/C-Sto/recursebuster)* 
 
 # License
 
