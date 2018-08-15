@@ -137,7 +137,11 @@ func HTTPGetter(wg *sync.WaitGroup, host Host, debug bool, Jitter int, soft404De
 		}
 		// Debug.Printf("host.HTTPResp.StatusCode: [%d]", host.HTTPResp.StatusCode)
 		if host.HTTPResp.StatusCode >= 300 && host.HTTPResp.StatusCode < 400 && followRedirects {
-			host.HTTPResp.Body.Close()
+			if i == numRedirects-1 {
+				defer host.HTTPResp.Body.Close()
+			} else {
+				host.HTTPResp.Body.Close()
+			}
 			x, err := host.HTTPResp.Location()
 			if err == nil {
 				redirs = append(redirs, fmt.Sprintf("[%v - %s]", y.Sprintf("%d", host.HTTPResp.StatusCode), g.Sprintf("%s", nextUrl)))
